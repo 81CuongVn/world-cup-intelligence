@@ -1,0 +1,42 @@
+import { Link, useLocation } from 'react-router-dom';
+import { Bilingual } from '../i18n/Bilingual';
+import { LangSwitch } from '../i18n/LangSwitch';
+import { BrandLogo } from '../brand/BrandLogo';
+
+const links = [
+  { to: '/', k: 'nav.home' as const, match: (p: string) => p === '/' },
+  { to: '/matches', k: 'nav.matches' as const, match: (p: string) => p === '/matches' || p.startsWith('/matches/') },
+  { to: '/tournaments', k: 'nav.tournaments' as const },
+  { to: '/news-intelligence', k: 'nav.articles' as const },
+  { to: '/guide', k: 'nav.guide' as const },
+];
+
+export function TopNav() {
+  const loc = useLocation();
+  return (
+    <header className="sticky top-0 z-50 border-b border-border/80 bg-background/95 backdrop-blur-md">
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 py-3">
+        <BrandLogo />
+        <nav className="hidden gap-1 md:flex">
+          {links.map((l) => {
+            const active = l.match ? l.match(loc.pathname) : loc.pathname === l.to;
+            return (
+              <Link
+                key={l.k}
+                to={l.to}
+                className={`rounded-lg px-3 py-2 text-base font-medium transition ${
+                  active
+                    ? 'bg-cyan/15 text-cyan'
+                    : 'text-foreground/75 hover:bg-panel2/60 hover:text-foreground'
+                }`}
+              >
+                <Bilingual k={l.k} as="span" />
+              </Link>
+            );
+          })}
+        </nav>
+        <LangSwitch />
+      </div>
+    </header>
+  );
+}

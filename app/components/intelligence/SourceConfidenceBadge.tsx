@@ -1,0 +1,1 @@
+export { SourceConfidenceBadge } from './SourceConfidencePanel';
