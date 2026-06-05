@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../env';
 import * as teamsRepo from '../db/repositories/teamsRepo';
+import { getTeamWorldCupHeadToHead } from '../services/matchHistory';
 import { WC2026_TOURNAMENT_ID } from '../constants/tournament';
 
 export const teamRoutes = new Hono<{ Bindings: AppEnv }>();
@@ -27,6 +28,12 @@ teamRoutes.get('/:teamId/squad', async (c) => {
     .bind(c.req.param('teamId'))
     .all();
   return c.json({ data: results ?? [] });
+});
+
+teamRoutes.get('/:teamId/wc-h2h', async (c) => {
+  const data = await getTeamWorldCupHeadToHead(c.env, c.req.param('teamId'));
+  if (!data) return c.json({ error: 'Not found' }, 404);
+  return c.json({ data });
 });
 
 teamRoutes.get('/:teamId/form', async (c) => {

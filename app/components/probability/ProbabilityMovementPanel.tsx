@@ -32,11 +32,17 @@ export function ProbabilityMovementPanel({ matchId, prob, currentMinute = 0 }: P
   const [movement, setMovement] = useState<ProbabilityMovementPayload | null>(null);
 
   useEffect(() => {
-    api
-      .matchProbabilityMovement(matchId)
-      .then((r) => setMovement(r.data))
-      .catch(() => setMovement(null));
-  }, [matchId]);
+    if (!matchId) return;
+    const load = () => {
+      api
+        .matchProbabilityMovement(matchId)
+        .then((r) => setMovement(r.data))
+        .catch(() => setMovement(null));
+    };
+    load();
+    const timer = setInterval(load, 30_000);
+    return () => clearInterval(timer);
+  }, [matchId, prob?.homeWinProb, prob?.drawProb, prob?.awayWinProb]);
 
   const meaningfulEvents = useMemo(() => {
     if (!movement?.events.length) return [];

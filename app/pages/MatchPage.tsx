@@ -35,20 +35,18 @@ import { ViewModeToggle, type ViewMode } from '../components/tactical/ViewModeTo
 import { EditorialArticleLayout } from '../components/editorial/EditorialArticleLayout';
 import { Bilingual } from '../components/i18n/Bilingual';
 import { derivePlayerImpact, defaultContributionSegments } from '../lib/derivePlayerImpact';
-import { TEAM_DISPLAY_NAMES, resolveTeamDisplayName } from '../lib/matchTeams';
+import { resolveTeamDisplayName } from '../lib/matchTeams';
+import { useMatchLiveData } from '../lib/useMatchLiveData';
 import { adjustProbabilities } from '../lib/simulator';
 import { pct } from '../lib/format';
 import { pickLocalized } from '../lib/briefingText';
 import { useI18n } from '../lib/i18n/I18nContext';
 
-const TEAM_NAMES = TEAM_DISPLAY_NAMES;
-
 export function MatchPage() {
   const { matchId } = useParams();
   const { t, mode } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('tactical');
-  const [match, setMatch] = useState<MatchSummary | null>(null);
-  const [prob, setProb] = useState<ProbabilityData | null>(null);
+  const { match, prob, loadError } = useMatchLiveData(matchId);
   const [briefing, setBriefing] = useState<TacticalBriefing | null>(null);
   const [events, setEvents] = useState<{ x?: number; y?: number; event_type?: string; xg?: number }[]>([]);
   const [analysis, setAnalysis] = useState<MultiVariableAnalysis | null>(null);
@@ -69,14 +67,11 @@ export function MatchPage() {
   useEffect(() => {
     if (!matchId) return;
     setNotFound(false);
-    setMatch(null);
-    api.match(matchId).then((r) => setMatch(r.data)).catch(() => setNotFound(true));
-    api.matchProbability(matchId).then((r) => setProb(r.data)).catch(() => setProb(null));
     api.matchBriefing(matchId).then((r) => setBriefing(r.data)).catch(() => setBriefing(null));
     api.matchEvents(matchId).then((r) => setEvents(r.data as typeof events));
     api.matchHistory(matchId).then((r) => {
-      setHistory(r.data.history);
-      setH2hSummary(r.data.summary);
+      setHistory(r.data.worldCupHistory ?? r.data.history);
+      setH2hSummary(r.data.worldCupSummary ?? r.data.summary);
       setTeamNames({
         home: r.data.current?.home_name ?? resolveTeamDisplayName(r.data.current?.home_team_id),
         away: r.data.current?.away_name ?? resolveTeamDisplayName(r.data.current?.away_team_id),
@@ -103,6 +98,10 @@ export function MatchPage() {
       api.matchMarketSignals(matchId).then((r) => setMarketSignals(r.data)).catch(() => setMarketSignals(null)),
     ]).finally(() => setIntelLoading(false));
   }, [matchId]);
+
+  useEffect(() => {
+    if (loadError && !match) setNotFound(true);
+  }, [loadError, match]);
 
   const home = teamNames.home || resolveTeamDisplayName(match?.home_team_id) || '';
   const away = teamNames.away || resolveTeamDisplayName(match?.away_team_id) || '';
@@ -196,6 +195,9 @@ export function MatchPage() {
                   xgHome={displayProb.xgHome}
                   xgAway={displayProb.xgAway}
                   confidence={displayProb.confidence}
+                  homeLabel={home}
+                  awayLabel={away}
+                  live={match.status === 'live'}
                 />
               )}
               <TacticalBriefingPanel briefing={briefing} />
@@ -260,6 +262,9 @@ export function MatchPage() {
           xgAway={displayProb.xgAway}
           confidence={displayProb.confidence}
           simulated={displayProb.simulated}
+          homeLabel={home}
+          awayLabel={away}
+          live={match.status === 'live'}
         />
       )}
 
@@ -293,6 +298,8 @@ export function MatchPage() {
         />
       )}
 
+      <ContributionRadialChart segments={defaultContributionSegments()} />
+
       <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
         <div className="space-y-4">
           <PitchMap events={events} homeLabel={home.slice(0, 3).toUpperCase()} awayLabel={away.slice(0, 3).toUpperCase()} />
@@ -319,7 +326,6 @@ export function MatchPage() {
             />
           )}
           <PlayerImpactCard players={players} />
-          <ContributionRadialChart segments={defaultContributionSegments()} />
           {(analysisLoading || analysis) && (
             <MultiVariablePanel analysis={analysis} loading={analysisLoading} />
           )}

@@ -41,8 +41,8 @@ export function MatchHeader({
   const isLive = status === 'live';
 
   return (
-    <header className="hero-glow panel sticky top-[3.25rem] z-30 border-cyan/20 md:static">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
+    <header className="hero-glow panel border-cyan/20">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2 md:pb-3">
         <p className="label-tactical text-muted">
           {stage ?? t('matchHeader.matchLabel')}
         </p>
@@ -56,7 +56,7 @@ export function MatchHeader({
       </div>
 
       {homeWin != null && (
-        <div className="mt-3 flex flex-wrap items-center gap-4 border-b border-border/40 pb-3">
+        <div className="mt-2 flex flex-wrap items-center gap-3 border-b border-border/40 pb-2 md:mt-3 md:gap-4 md:pb-3">
           <div className="font-mono-data text-xs text-muted">
             {t('featured.modelNow')}
           </div>
@@ -79,18 +79,18 @@ export function MatchHeader({
         </div>
       )}
 
-      <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-6">
-        <h1 className="font-display text-right text-2xl leading-none tracking-wide text-foreground md:text-4xl lg:text-5xl">
+      <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 md:mt-4 md:gap-6">
+        <h1 className="font-display text-right text-base leading-tight tracking-wide text-foreground sm:text-xl md:text-4xl lg:text-5xl">
           {home}
         </h1>
-        <div className="score-pulse rounded-xl border border-cyan/30 bg-background/80 px-5 py-3 md:px-8 md:py-4">
-          <p className="font-display text-4xl tabular-nums text-foreground md:text-6xl lg:text-7xl">
+        <div className="score-pulse rounded-lg border border-cyan/30 bg-background/80 px-3 py-2 md:rounded-xl md:px-8 md:py-4">
+          <p className="font-display text-2xl tabular-nums text-foreground sm:text-3xl md:text-6xl lg:text-7xl">
             {homeScore}
-            <span className="mx-1 text-cyan/60">–</span>
+            <span className="mx-0.5 text-cyan/60 md:mx-1">–</span>
             {awayScore}
           </p>
         </div>
-        <h1 className="font-display text-left text-2xl leading-none tracking-wide text-foreground md:text-4xl lg:text-5xl">
+        <h1 className="font-display text-left text-base leading-tight tracking-wide text-foreground sm:text-xl md:text-4xl lg:text-5xl">
           {away}
         </h1>
       </div>

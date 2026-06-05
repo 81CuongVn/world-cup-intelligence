@@ -12,6 +12,7 @@
 - Trận nổi bật (featured match) + xác suất real-time
 - Lịch thi đấu rút gọn, tin nóng, snapshot giải (scheduled / live / completed)
 - Song ngữ **Tiếng Việt / English** (toàn site)
+- Tin nóng tự dịch VI; làm mới mỗi 30 giây
 
 ### Trận đấu (`/matches`)
 - Lịch đầy đủ **104 trận** WC 2026 (vòng bảng + knockout)
@@ -28,23 +29,30 @@ Sau mỗi trận kết thúc (cron mỗi phút):
 > Hiện dùng mock ingest (tỉ số theo thời gian kickoff). Sẵn sàng thay bằng API dữ liệu thật trong `src/ingestion/matchDataRefresh.ts`.
 
 ### Chi tiết trận (`/matches/:matchId`)
-- Xác suất thắng / hòa / thua, phân bố tỉ số, khoảng thời gian ghi bàn
-- Team system, kịch bản (scenarios), model vs market
-- Lịch sử đối đầu, preview AI, tactical briefing
-- Phân tích sâu: `/matches/:matchId/analysis`
+- **Xác suất real-time** — poll 30s (15s khi LIVE): tỉ lệ thắng/hòa/thua, xG, độ tin cậy
+- Panel xác suất hiển thị **tên đội** (không còn Chủ nhà/Khách), badge LIVE khi trận đang diễn ra
+- **Cơ cấu đóng góp đội** — section riêng full-width, nhãn đầy đủ (Ép sân, Kiến tạo, …), đặt trên lịch sử đối đầu
+- **Đối đầu World Cup** — các trận giữa hai đội ở các kỳ WC trước 2026, kèm tỉ số & vòng đấu
+- Team system, kịch bản (scenarios), mô hình vs thị trường (ẩn khi không có odds)
+- Preview AI, tactical briefing, biến động xác suất theo thời gian
+- **Mobile:** header tỉ số không còn sticky — cuộn xuống đọc được toàn bộ nội dung
+
+### Phân tích dài (`/matches/:matchId/analysis`)
+- Tiêu đề trận bằng **tên đội thật** (vd. *United States vs Argentina*), kèm ngày kickoff
+- Xác suất, hệ thống đội, kịch bản, thị trường, lịch sử đối đầu WC — cập nhật real-time
 
 ### Bài viết / News Intelligence (`/news-intelligence`)
 - RSS từ **BBC**, **The Guardian**, **FIFA** (crawl mỗi 15 phút)
 - Danh sách tin + thẻ nóng
 - **Mỗi bài một trang riêng** (`/news-intelligence/:articleId`)
-- Nút **Tiếng Việt | English** trên từng bài (dịch AI lần đầu, lưu D1)
+- Nút **Tiếng Việt | English** trên từng bài (dịch AI: m2m100 + gateway, lưu D1)
 - Link *Đọc chi tiết tại nguồn* mở bài gốc
 
 ### Hướng dẫn (`/guide`)
 - Giải thích cách đọc xác suất, kịch bản, disclaimer thị trường
 
 ### Đội / Cầu thủ
-- `/teams/:teamId` — đội hình, phong độ
+- `/teams/:teamId` — hồ sơ đội + **tổng hợp đối đầu World Cup** theo từng đối thủ (W/D/L, tỉ số từng trận)
 - `/players/:playerId` — thông tin cầu thủ
 - `/lineups/:matchId` — đội hình trận
 
@@ -71,6 +79,7 @@ Cron (* * * * *) ──► INGEST_QUEUE ──► matchDataRefresh
 Cron (*/15 * * * *) ──► crawl_news ──► RSS ──► D1 + dịch VI
 
 React SPA (Vite) ──► Hono API on Workers ──► D1 / KV / R2 / Queues / AI
+                      └── useMatchLiveData (poll 15–30s)
 ```
 
 **Stack:** Cloudflare Workers, D1, KV, R2, Queues, Durable Objects, Workers AI, Vite + React 19, Tailwind, Hono, TypeScript.
@@ -95,6 +104,12 @@ Worker + D1 local:
 npx wrangler dev
 ```
 
+Worker + D1 remote (cần mạng ổn định tới Cloudflare):
+
+```bash
+npx wrangler dev --remote --port 8787
+```
+
 ---
 
 ## Scripts
@@ -103,7 +118,7 @@ npx wrangler dev
 |--------|--------|
 | `npm run dev` | Frontend Vite |
 | `npm run build` | Build production |
-| `npm run test` | Vitest (39 tests) |
+| `npm run test` | Vitest (41 tests) |
 | `npm run typecheck` | TypeScript |
 | `npm run deploy` | Build + `wrangler deploy` |
 | `npm run db:migrate:local` | Migration D1 local |
@@ -137,8 +152,11 @@ Chi tiết AI Gateway: xem [BRANDING.md](./BRANDING.md).
 | `GET /api/schedule` | Lịch 104 trận theo ngày |
 | `GET /api/matches/:id` | Chi tiết trận |
 | `GET /api/matches/:id/probability` | Snapshot xác suất |
+| `GET /api/matches/:id/history` | Đối đầu WC (`worldCupHistory`, `worldCupSummary`) |
 | `GET /api/matches/:id/tactical-briefing` | Briefing AI |
 | `GET /api/matches/:id/scenarios` | Kịch bản |
+| `GET /api/matches/:id/probability-movement` | Lịch sử biến động xác suất |
+| `GET /api/teams/:id/wc-h2h` | Lịch sử WC của đội theo đối thủ |
 | `GET /api/news` | Danh sách tin (paginate, hot) |
 | `GET /api/news/:docId` | Một bài (+ dịch VI on-demand) |
 | `GET /api/analysis/:matchId` | Phân tích đa biến |
@@ -151,14 +169,15 @@ Admin (cần `X-Admin-Token`): `POST /api/admin/recompute-all`, `POST /api/admin
 
 ```bash
 npm run typecheck   # ✓ pass
-npm test            # ✓ 39 tests, 14 files
+npm test            # ✓ 41 tests, 15 files
 ```
 
 **Đã kiểm tra:**
 - Xác suất & snapshot engine
-- Dịch tin tức (VI detection, backfill)
+- Dịch tin tức (VI detection, backfill, m2m100)
 - RSS images & publishers
 - Post-match lifecycle & xếp hạng bảng
+- Lịch sử đối đầu World Cup (grouping, summary)
 - Market calculations, scoreline, safety copy
 
 ---
@@ -167,16 +186,23 @@ npm test            # ✓ 39 tests, 14 files
 
 ```
 app/           React UI (pages, components, i18n)
+  lib/         useMatchLiveData, matchTeams, api
 src/
   routes/      Hono API
-  services/    recompute, progression, translation
+  services/    recompute, progression, matchHistory, translation
   ingestion/   match refresh, news crawler
   models/      probability engine
   queues/      ingest + model consumers
   scheduled/   cron
-migrations/    D1 SQL (0001–0012)
+migrations/    D1 SQL (0001–0013)
 tests/         Vitest
 ```
+
+---
+
+## Dữ liệu lịch sử World Cup
+
+Migration `0013_wc_historical_h2h.sql` seed các kỳ WC (1930–2022) và trận đối đầu giữa 6 đội tham chiếu (ARG, FRA, BRA, ENG, USA, MEX). Có thể mở rộng thêm đội/trận khi cần.
 
 ---
 
@@ -195,6 +221,7 @@ tests/         Vitest
 - [ ] 8 suất hạng 3 tốt nhất → R32 trận 13–16
 - [ ] Bracket visualization UI
 - [ ] Bảng xếp hạng vòng bảng trên web
+- [ ] Mở rộng seed lịch sử WC cho 48 đội WC 2026
 
 ---
 

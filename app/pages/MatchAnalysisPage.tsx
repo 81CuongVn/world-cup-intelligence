@@ -2,49 +2,56 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   api,
-  type MatchSummary,
-  type ProbabilityData,
   type TeamSystemPayload,
   type ScenariosPayload,
   type MarketSignalsPayload,
   type MatchPreviewAnalysis,
+  type HistoryMatch,
+  type H2HSummary,
 } from '../lib/api';
 import { TeamSystemPanel } from '../components/team/TeamSystemPanel';
 import { ScenarioLikelihoodPanel } from '../components/scenarios/ScenarioLikelihoodPanel';
 import { MarketSignalPanel } from '../components/market/MarketSignalPanel';
 import { MatchPreviewAnalysisPanel } from '../components/match/MatchPreviewAnalysisPanel';
 import { ProbabilityStrip } from '../components/tactical/ProbabilityStrip';
+import { MatchHistoryPanel } from '../components/match/MatchHistoryPanel';
 import { TacticalBriefingPanel } from '../components/tactical/TacticalBriefingPanel';
 import { pct } from '../lib/format';
-import { formatMatchVersus } from '../lib/matchTeams';
+import { formatMatchVersus, resolveTeamDisplayName } from '../lib/matchTeams';
 import { pickLocalized } from '../lib/briefingText';
+import { useMatchLiveData } from '../lib/useMatchLiveData';
 import { useI18n } from '../lib/i18n/I18nContext';
 
 export function MatchAnalysisPage() {
   const { matchId } = useParams();
   const { t, mode } = useI18n();
-  const [match, setMatch] = useState<MatchSummary | null>(null);
-  const [prob, setProb] = useState<ProbabilityData | null>(null);
+  const { match, prob } = useMatchLiveData(matchId);
   const [preview, setPreview] = useState<MatchPreviewAnalysis | null>(null);
   const [teamSystem, setTeamSystem] = useState<TeamSystemPayload | null>(null);
   const [scenarios, setScenarios] = useState<ScenariosPayload | null>(null);
   const [market, setMarket] = useState<MarketSignalsPayload | null>(null);
   const [teamNames, setTeamNames] = useState({ home: '', away: '' });
+  const [wcHistory, setWcHistory] = useState<HistoryMatch[]>([]);
+  const [wcSummary, setWcSummary] = useState<H2HSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!matchId) return;
     setLoading(true);
     Promise.all([
-      api.match(matchId).then((r) => setMatch(r.data)),
-      api.matchProbability(matchId).then((r) => setProb(r.data)).catch(() => setProb(null)),
       api.matchPreview(matchId).then((r) => setPreview(r.data)).catch(() => setPreview(null)),
       api.matchHistory(matchId).then((r) => {
         setTeamNames({
           home: r.data.current?.home_name ?? '',
           away: r.data.current?.away_name ?? '',
         });
-      }).catch(() => setTeamNames({ home: '', away: '' })),
+        setWcHistory(r.data.worldCupHistory ?? r.data.history);
+        setWcSummary(r.data.worldCupSummary ?? r.data.summary);
+      }).catch(() => {
+        setTeamNames({ home: '', away: '' });
+        setWcHistory([]);
+        setWcSummary(null);
+      }),
       api.matchTeamSystem(matchId).then((r) => setTeamSystem(r.data)).catch(() => setTeamSystem(null)),
       api.matchScenarios(matchId).then((r) => setScenarios(r.data)).catch(() => setScenarios(null)),
       api.matchMarketSignals(matchId).then((r) => setMarket(r.data)).catch(() => setMarket(null)),
@@ -52,17 +59,34 @@ export function MatchAnalysisPage() {
   }, [matchId]);
 
   const title = useMemo(() => {
-    if (preview) return pickLocalized(preview.matchLabel, mode);
-    if (match) {
-      return formatMatchVersus(
-        match.home_team_id,
-        match.away_team_id,
-        teamNames.home,
-        teamNames.away,
-      );
+    const homeId = match?.home_team_id ?? preview?.home.teamId;
+    const awayId = match?.away_team_id ?? preview?.away.teamId;
+    const homeName = teamNames.home || preview?.home.teamName;
+    const awayName = teamNames.away || preview?.away.teamName;
+    const versus = formatMatchVersus(homeId, awayId, homeName, awayName);
+
+    if (versus) {
+      const stage = match?.stage ?? preview?.stage ?? null;
+      const group = preview?.groupCode ?? null;
+      if (stage === 'Group' && group) {
+        return mode === 'vi'
+          ? `Bảng ${group}: ${versus.replace(' vs ', ' – ')}`
+          : `Group ${group}: ${versus}`;
+      }
+      if (stage) {
+        return mode === 'vi'
+          ? `${stage}: ${versus.replace(' vs ', ' – ')}`
+          : `${stage}: ${versus}`;
+      }
+      return versus;
     }
+
+    if (preview?.matchLabel) return pickLocalized(preview.matchLabel, mode);
     return t('matchAnalysis.title');
   }, [preview, match, teamNames, mode, t]);
+
+  const home = teamNames.home || preview?.home.teamName || resolveTeamDisplayName(match?.home_team_id) || '';
+  const away = teamNames.away || preview?.away.teamName || resolveTeamDisplayName(match?.away_team_id) || '';
 
   if (!match && !loading) {
     return (
@@ -122,12 +146,23 @@ export function MatchAnalysisPage() {
             xgHome={prob.expectedHomeGoals}
             xgAway={prob.expectedAwayGoals}
             confidence={prob.confidence}
+            homeLabel={home}
+            awayLabel={away}
+            live={match?.status === 'live'}
           />
           {scorelineLine && <p className="text-base leading-relaxed text-foreground/90">{scorelineLine}</p>}
         </section>
       )}
 
       <TeamSystemPanel home={teamSystem?.home ?? null} away={teamSystem?.away ?? null} loading={loading} />
+      {wcSummary && (
+        <MatchHistoryPanel
+          homeName={home}
+          awayName={away}
+          history={wcHistory}
+          summary={wcSummary}
+        />
+      )}
       <MatchPreviewAnalysisPanel preview={preview} loading={loading} />
       <ScenarioLikelihoodPanel data={scenarios} loading={loading} />
       <MarketSignalPanel payload={market} loading={loading} />

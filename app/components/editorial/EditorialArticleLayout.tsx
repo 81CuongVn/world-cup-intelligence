@@ -65,7 +65,7 @@ export function EditorialArticleLayout({
 
         <aside className={`space-y-4 ${meta ? 'hidden lg:block' : ''}`}>
           {stickyContext && (
-            <div className="panel-dense sticky top-[4.5rem] border-cyan/20">
+            <div className="panel-dense border-cyan/20 lg:sticky lg:top-[4.5rem]">
               <p className="label-tactical text-cyan">
                 {t('editorial.context')}
               </p>

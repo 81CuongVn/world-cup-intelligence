@@ -41,11 +41,11 @@ export function ContributionRadialChart({ segments, title }: Props) {
   });
 
   return (
-    <div className="panel-dense">
+    <section className="panel space-y-5">
       <SectionLabel title={chartTitle} subtitle={t('contribution.subtitle')} accent="purple" />
-      <div className="grid items-center gap-6 sm:grid-cols-2 sm:gap-8">
-        <div className="flex justify-center py-1">
-          <svg viewBox="0 0 100 100" className="h-40 w-40 max-w-full" aria-hidden>
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(12rem,16rem)_1fr] lg:gap-12">
+        <div className="mx-auto flex justify-center lg:mx-0">
+          <svg viewBox="0 0 100 100" className="h-44 w-44 shrink-0 sm:h-48 sm:w-48" aria-hidden>
             {arcs.map((a) => (
               <path
                 key={a.label}
@@ -71,25 +71,25 @@ export function ContributionRadialChart({ segments, title }: Props) {
           </svg>
         </div>
 
-        <ul className="flex flex-col justify-center gap-0 divide-y divide-border/40">
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {arcs.map((a) => (
             <li
               key={a.label}
-              className="grid min-h-[2.25rem] grid-cols-[0.625rem_minmax(0,1fr)_2.75rem] items-center gap-x-3 py-2 first:pt-0 last:pb-0"
+              className="flex items-center gap-3 rounded-lg border border-border/40 bg-panel2/40 px-4 py-3"
             >
               <span
-                className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                className="h-3 w-3 shrink-0 rounded-sm"
                 style={{ background: a.color }}
                 aria-hidden
               />
-              <span className="truncate text-sm leading-none text-muted">{a.label}</span>
-              <span className="text-right font-mono-data text-sm tabular-nums text-foreground">
+              <span className="min-w-0 flex-1 text-sm leading-snug text-foreground">{a.label}</span>
+              <span className="shrink-0 font-mono-data text-sm font-semibold tabular-nums text-foreground">
                 {(a.pct * 100).toFixed(0)}%
               </span>
             </li>
           ))}
         </ul>
       </div>
-    </div>
+    </section>
   );
 }

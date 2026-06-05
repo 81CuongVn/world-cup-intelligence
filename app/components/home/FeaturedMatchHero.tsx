@@ -74,6 +74,9 @@ export function FeaturedMatchHero({ match }: Props) {
               xgHome={p.expectedHomeGoals}
               xgAway={p.expectedAwayGoals}
               confidence={p.confidence}
+              homeLabel={match.home_name}
+              awayLabel={match.away_name}
+              live={match.status === 'live'}
             />
           </div>
         ) : (

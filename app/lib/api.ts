@@ -52,7 +52,9 @@ export const api = {
     get<{
       data: {
         history: HistoryMatch[];
+        worldCupHistory: HistoryMatch[];
         summary: H2HSummary;
+        worldCupSummary: H2HSummary;
         current: HistoryMatch;
       };
     }>(`/matches/${id}/history`),
@@ -73,6 +75,14 @@ export const api = {
   historicalTournaments: () => get<{ data: HistoricalTournament[] }>('/tournaments'),
   teams: () => get<{ data: TeamSummary[] }>('/teams'),
   team: (id: string) => get<{ data: TeamSummary }>(`/teams/${id}`),
+  teamWcH2h: (id: string) =>
+    get<{
+      data: {
+        teamId: string;
+        totalMeetings: number;
+        opponents: TeamWcOpponentRecord[];
+      };
+    }>(`/teams/${id}/wc-h2h`),
   players: () => get<{ data: PlayerSummary[] }>('/players'),
   player: (id: string) => get<{ data: PlayerSummary }>(`/players/${id}`),
   search: (q: string) => get<{ data: Record<string, unknown[]> }>(`/search?q=${encodeURIComponent(q)}`),
@@ -107,6 +117,18 @@ export type H2HSummary = {
   avgGoalsAway: number;
   recentFormHome: string;
   recentFormAway: string;
+};
+
+export type TeamWcOpponentRecord = {
+  opponentId: string;
+  opponentName: string;
+  opponentShort: string | null;
+  meetings: HistoryMatch[];
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
 };
 
 export type ProbabilityHint = {

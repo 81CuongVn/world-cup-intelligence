@@ -252,6 +252,18 @@ export type LocaleKey =
   | 'source.tierTrusted'
   | 'source.tierReview'
   | 'source.platformBriefing'
+  | 'match.wcHistory'
+  | 'match.wcHistoryHint'
+  | 'match.wcHistoryEmpty'
+  | 'team.wcH2hTitle'
+  | 'team.wcH2hSubtitle'
+  | 'team.wcH2hEmpty'
+  | 'team.wcH2hRecord'
+  | 'team.wcH2hMeetings'
+  | 'history.stageR16'
+  | 'history.stageQf'
+  | 'history.stageSf'
+  | 'history.stageFinal'
   | 'history.matchStage';
 
 export const messages: Record<LocaleKey, { vi: string; en: string }> = {
@@ -340,6 +352,18 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
     en: 'No completed meetings between these teams at World Cup 2026 yet.',
   },
   'match.h2hSummary': { vi: 'Tổng hợp đối đầu', en: 'H2H summary' },
+  'match.wcHistory': {
+    vi: 'Đối đầu tại các World Cup trước',
+    en: 'Previous World Cup meetings',
+  },
+  'match.wcHistoryHint': {
+    vi: 'Các trận đã kết thúc giữa hai đội ở các kỳ World Cup trước 2026.',
+    en: 'Completed meetings between these teams at World Cups before 2026.',
+  },
+  'match.wcHistoryEmpty': {
+    vi: 'Hai đội chưa từng gặp nhau tại World Cup trước 2026.',
+    en: 'These teams have not met at a World Cup before 2026.',
+  },
   'match.hints': { vi: 'Gợi ý xác suất', en: 'Probability hints' },
   'match.hintsNote': {
     vi: 'Số liệu từ mô hình thống kê — chỉ để phân tích, không phải hướng dẫn đặt cược.',
@@ -676,5 +700,26 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
     vi: 'PitchIntel — Phân tích từ mô hình thống kê',
     en: 'PitchIntel — Statistical model preview',
   },
+  'team.wcH2hTitle': {
+    vi: 'Đối đầu tại World Cup',
+    en: 'World Cup head-to-head',
+  },
+  'team.wcH2hSubtitle': {
+    vi: '{team} — {n} trận tại các kỳ World Cup trước',
+    en: '{team} — {n} meetings at past World Cups',
+  },
+  'team.wcH2hEmpty': {
+    vi: 'Chưa có dữ liệu đối đầu World Cup cho đội này.',
+    en: 'No World Cup head-to-head data for this team yet.',
+  },
+  'team.wcH2hRecord': {
+    vi: 'Thắng {w} · Hòa {d} · Thua {l} · BT {gf}–{ga}',
+    en: 'W {w} · D {d} · L {l} · GF {gf}–{ga}',
+  },
+  'team.wcH2hMeetings': { vi: 'trận', en: 'matches' },
+  'history.stageR16': { vi: 'Vòng 1/8', en: 'Round of 16' },
+  'history.stageQf': { vi: 'Tứ kết', en: 'Quarter-final' },
+  'history.stageSf': { vi: 'Bán kết', en: 'Semi-final' },
+  'history.stageFinal': { vi: 'Chung kết', en: 'Final' },
   'history.matchStage': { vi: 'Trận', en: 'Match' },
 };
