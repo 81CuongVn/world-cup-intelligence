@@ -37,6 +37,19 @@ function resolveThumbnail(row: NewsRow): string | null {
   return ext ?? null;
 }
 
+async function translateRowsForList(env: AppEnv, rows: NewsRow[]): Promise<void> {
+  await Promise.all(
+    rows.map(async (row) => {
+      if (!needsNewsTranslation(row)) return;
+      const patched = await ensureNewsArticleTranslated(env, row);
+      if (patched) {
+        row.title_vi = patched.title_vi;
+        row.summary_vi = patched.summary_vi;
+      }
+    }),
+  );
+}
+
 function mapArticle(row: NewsRow) {
   const thumb = resolveThumbnail(row);
   const doc = {
@@ -150,7 +163,9 @@ newsRoutes.get('/', async (c) => {
     .bind(hotLimit)
     .all<NewsRow>();
 
-  const hot = (hotRows ?? []).map(mapArticle);
+  const hotRowsList = hotRows ?? [];
+  await translateRowsForList(c.env, hotRowsList);
+  const hot = hotRowsList.map(mapArticle);
   const hotIds = hot.map((h) => h.id);
   const placeholders = hotIds.length ? hotIds.map(() => '?').join(',') : "''";
 
@@ -180,10 +195,15 @@ newsRoutes.get('/', async (c) => {
     .bind(...hotIds, pageSize, offset)
     .all<NewsRow>();
 
+  const pageRowsList = pageRows ?? [];
+  if (page === 1) {
+    await translateRowsForList(c.env, pageRowsList);
+  }
+
   return c.json({
     data: {
       hot,
-      articles: (pageRows ?? []).map(mapArticle),
+      articles: pageRowsList.map(mapArticle),
     },
     meta: {
       page,
