@@ -28,6 +28,7 @@ export type LocaleKey =
   | 'news.tapToRead'
   | 'news.translating'
   | 'news.translatingBody'
+  | 'news.translationFallback'
   | 'news.notFound'
   | 'home.title'
   | 'home.subtitle'
@@ -290,6 +291,10 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
   'news.translatingBody': {
     vi: 'Nội dung đang được dịch — vui lòng đợi vài giây.',
     en: 'Content is being translated — please wait a moment.',
+  },
+  'news.translationFallback': {
+    vi: 'Chưa dịch được tự động — hiển thị bản tiếng Anh. Bạn có thể mở nguồn gốc bên dưới.',
+    en: 'Auto-translation unavailable — showing English. Open the source link below for the original.',
   },
   'news.notFound': { vi: 'Không tìm thấy bài viết.', en: 'Article not found.' },
   'home.title': { vi: 'Trung tâm Chiến thuật World Cup', en: 'World Cup Tactical Command' },

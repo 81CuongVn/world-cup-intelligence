@@ -5,6 +5,9 @@ import { NewsArticleReadView } from '../components/news/NewsArticleReadView';
 import type { ArticleLang } from '../components/news/NewsArticleLangToggle';
 import { useI18n } from '../lib/i18n/I18nContext';
 
+const POLL_MS = 2500;
+const MAX_POLLS = 12;
+
 export function NewsArticlePage() {
   const { articleId } = useParams();
   const navigate = useNavigate();
@@ -13,11 +16,13 @@ export function NewsArticlePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [articleLang, setArticleLang] = useState<ArticleLang>(mode === 'en' ? 'en' : 'vi');
+  const [polls, setPolls] = useState(0);
 
   useEffect(() => {
     if (!articleId) return;
     setLoading(true);
     setError(false);
+    setPolls(0);
     api
       .newsArticle(articleId)
       .then((r) => setArticle(r.data))
@@ -26,12 +31,18 @@ export function NewsArticlePage() {
   }, [articleId]);
 
   useEffect(() => {
-    if (articleLang !== 'vi' || !article || article.translated) return;
-    api
-      .newsArticle(article.id)
-      .then((r) => setArticle(r.data))
-      .catch(() => undefined);
-  }, [articleLang, article?.id, article?.translated]);
+    if (articleLang !== 'vi' || !article?.id || article.translated || polls >= MAX_POLLS) return;
+
+    const timer = setInterval(() => {
+      setPolls((n) => n + 1);
+      api
+        .newsArticle(article.id)
+        .then((r) => setArticle(r.data))
+        .catch(() => undefined);
+    }, POLL_MS);
+
+    return () => clearInterval(timer);
+  }, [articleLang, article?.id, article?.translated, polls]);
 
   if (!articleId) {
     return (
@@ -68,6 +79,7 @@ export function NewsArticlePage() {
       articleLang={articleLang}
       onArticleLangChange={setArticleLang}
       onBack={() => navigate('/news-intelligence')}
+      translationPending={articleLang === 'vi' && !article.translated && polls < MAX_POLLS}
     />
   );
 }

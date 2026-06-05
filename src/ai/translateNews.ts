@@ -1,6 +1,7 @@
 import type { AppEnv } from '../env';
 import { gatewayChatJson, isGatewayConfigured } from './gatewayClient';
 import { isLikelyVietnamese } from '../services/newsTranslationUtils';
+import { logError, logInfo } from '../utils/logger';
 
 export type NewsTranslation = {
   titleVi: string;
@@ -34,6 +35,17 @@ function parseTranslationJson(text: string): TranslationResponse | null {
   }
 }
 
+/** Accept if clearly not a copy of the English source. */
+function isAcceptableTranslation(vi: string, en: string): boolean {
+  const value = vi.trim();
+  const source = en.trim();
+  if (!value || value.length < 3) return false;
+  if (value.toLowerCase() === source.toLowerCase()) return false;
+  if (isLikelyVietnamese(value, source)) return true;
+  // m2m100 / short headlines may lack diacritics when many proper nouns — allow if meaningfully different
+  return value.length >= 8 && value.toLowerCase() !== source.toLowerCase();
+}
+
 function normalizeTranslation(
   parsed: TranslationResponse,
   title: string,
@@ -41,9 +53,33 @@ function normalizeTranslation(
 ): NewsTranslation | null {
   const titleVi = parsed.titleVi?.trim().slice(0, 320);
   const summaryVi = (parsed.summaryVi ?? summary).trim().slice(0, 520);
-  if (!titleVi || !isLikelyVietnamese(titleVi, title)) return null;
-  if (!isLikelyVietnamese(summaryVi, summary)) return null;
+  if (!titleVi || !summaryVi) return null;
+  if (!isAcceptableTranslation(titleVi, title)) return null;
+  if (!isAcceptableTranslation(summaryVi, summary) && !isLikelyVietnamese(summaryVi, summary)) {
+    return null;
+  }
   return { titleVi, summaryVi };
+}
+
+/** Cloudflare dedicated EN→VI model — works without OpenAI key. */
+async function m2m100Translate(env: AppEnv, text: string, maxLen: number): Promise<string | null> {
+  if (!env.AI || !text.trim()) return null;
+  try {
+    const response = await env.AI.run('@cf/meta/m2m100-1.2b', {
+      text: text.slice(0, maxLen === 320 ? 400 : 900),
+      source_lang: 'en',
+      target_lang: 'vi',
+    });
+    const translated =
+      typeof response === 'object' && response && 'translated_text' in response
+        ? String((response as { translated_text: string }).translated_text).trim()
+        : '';
+    if (!translated) return null;
+    return translated.slice(0, maxLen);
+  } catch (e) {
+    logError('m2m100 translate failed', { error: String(e).slice(0, 120) });
+    return null;
+  }
 }
 
 async function workersAiTranslate(
@@ -81,12 +117,34 @@ async function workersAiTranslate(
   return null;
 }
 
+async function m2m100NewsTranslation(
+  env: AppEnv,
+  title: string,
+  summary: string,
+): Promise<NewsTranslation | null> {
+  const [titleVi, summaryVi] = await Promise.all([
+    m2m100Translate(env, title, 320),
+    m2m100Translate(env, summary, 520),
+  ]);
+  if (!titleVi || !summaryVi) return null;
+  if (!isAcceptableTranslation(titleVi, title)) return null;
+  if (!isAcceptableTranslation(summaryVi, summary)) return null;
+  logInfo('news translated via m2m100', { title_len: titleVi.length });
+  return { titleVi, summaryVi };
+}
+
 export async function translateNewsHeadline(
   env: AppEnv,
   title: string,
   summary: string,
 ): Promise<NewsTranslation | null> {
   if (!title.trim()) return null;
+
+  const viaM2m = await m2m100NewsTranslation(env, title, summary);
+  if (viaM2m) return viaM2m;
+
+  const viaWorkers = await workersAiTranslate(env, title, summary);
+  if (viaWorkers) return viaWorkers;
 
   if (isGatewayConfigured(env)) {
     try {
@@ -99,9 +157,10 @@ export async function translateNewsHeadline(
         if (normalized) return normalized;
       }
     } catch {
-      /* Workers AI fallback below */
+      /* already tried Workers AI */
     }
   }
 
-  return workersAiTranslate(env, title, summary);
+  logError('news translation exhausted all providers', { title: title.slice(0, 60) });
+  return null;
 }

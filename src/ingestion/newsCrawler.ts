@@ -41,12 +41,13 @@ export async function crawlWorldCupNews(env: AppEnv): Promise<number> {
         const summaryEn = item.description.slice(0, 500);
 
         const translation = await translateNewsHeadline(env, item.title, summaryEn);
-        if (!translation?.titleVi?.trim() || !translation.summaryVi?.trim()) {
-          logError('news translation failed — skipping item', { title: item.title.slice(0, 80) });
-          continue;
+        const titleVi = translation?.titleVi?.trim() || null;
+        const summaryVi = translation?.summaryVi?.trim() || null;
+        if (!titleVi || !summaryVi) {
+          logError('news translation deferred — will backfill on read', {
+            title: item.title.slice(0, 80),
+          });
         }
-        const titleVi = translation.titleVi;
-        const summaryVi = translation.summaryVi;
 
         const feedImage = normalizeFeedImageUrl(item.imageUrl);
         const thumbnailR2Key = await compressAndStoreNewsImage(env, docId, feedImage);

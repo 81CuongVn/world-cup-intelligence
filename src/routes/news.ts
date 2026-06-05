@@ -111,7 +111,7 @@ newsRoutes.get('/', async (c) => {
 
   const untranslated = await countUntranslatedNews(c.env);
   if (untranslated > 0) {
-    c.executionCtx.waitUntil(backfillNewsTranslations(c.env, Math.min(8, untranslated)));
+    c.executionCtx.waitUntil(backfillNewsTranslations(c.env, Math.min(15, untranslated)));
   }
 
   if (!lastThumbBackfill) {

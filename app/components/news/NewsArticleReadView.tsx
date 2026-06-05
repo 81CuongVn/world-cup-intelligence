@@ -9,6 +9,7 @@ type Props = {
   articleLang: ArticleLang;
   onArticleLangChange: (lang: ArticleLang) => void;
   onBack: () => void;
+  translationPending?: boolean;
 };
 
 export function NewsArticleReadView({
@@ -16,13 +17,22 @@ export function NewsArticleReadView({
   articleLang,
   onArticleLangChange,
   onBack,
+  translationPending = false,
 }: Props) {
   const { t } = useI18n();
   const locale = articleLang === 'en' ? 'en' : 'vi-VN';
 
   const needsVi = articleLang === 'vi' && !article.translated;
-  const title = needsVi ? t('news.translating') : pickNewsTitle(article, articleLang);
-  const summary = needsVi ? t('news.translatingBody') : pickNewsSummary(article, articleLang);
+  const title = needsVi
+    ? translationPending
+      ? t('news.translating')
+      : pickNewsTitle(article, 'en')
+    : pickNewsTitle(article, articleLang);
+  const summary = needsVi
+    ? translationPending
+      ? t('news.translatingBody')
+      : pickNewsSummary(article, 'en')
+    : pickNewsSummary(article, articleLang);
 
   return (
     <div className="space-y-4">
@@ -60,10 +70,13 @@ export function NewsArticleReadView({
 
         <div className="space-y-3">
           <p className="label-tactical text-cyan">{t('news.briefLabel')}</p>
+          {needsVi && !translationPending && (
+            <p className="text-sm text-muted">{t('news.translationFallback')}</p>
+          )}
           <div className="editorial-prose whitespace-pre-line text-foreground/95">{summary}</div>
         </div>
 
-        {!needsVi && article.source_url && (
+        {(!needsVi || !translationPending) && article.source_url && (
           <a
             href={article.source_url}
             target="_blank"

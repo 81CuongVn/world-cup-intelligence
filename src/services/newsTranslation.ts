@@ -41,7 +41,7 @@ export async function countUntranslatedNews(env: AppEnv): Promise<number> {
   return (results ?? []).filter(needsNewsTranslation).length;
 }
 
-export async function backfillNewsTranslations(env: AppEnv, limit = 20): Promise<number> {
+export async function backfillNewsTranslations(env: AppEnv, limit = 25): Promise<number> {
   const { results } = await env.DB.prepare(
     `SELECT id, title, summary, title_vi, summary_vi
      FROM source_documents
