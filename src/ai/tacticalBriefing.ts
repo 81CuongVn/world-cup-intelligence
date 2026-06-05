@@ -4,7 +4,7 @@ import { nowIso } from '../utils/time';
 import { isGatewayConfigured, gatewayChatJson } from './gatewayClient';
 import { SYSTEM_NO_INVENT_NUMBERS, tacticalBriefingPrompt } from './prompts';
 
-const BRIEFING_CACHE_PREFIX = 'briefing:vi2:';
+const BRIEFING_CACHE_PREFIX = 'briefing:vi3:';
 
 type BriefingInput = {
   matchId: string;
@@ -73,9 +73,9 @@ export function fallbackBriefing(input: BriefingInput): TacticalBriefing {
     ],
     citations: [
       {
-        sourceDocumentId: 'doc-1',
+        sourceDocumentId: 'platform-model',
         title: 'Tactical preview',
-        sourceName: 'Platform',
+        sourceName: 'PitchIntel',
         reliabilityScore: 0.75,
       },
     ],

@@ -245,6 +245,7 @@ export type LocaleKey =
   | 'source.tierOfficial'
   | 'source.tierTrusted'
   | 'source.tierReview'
+  | 'source.platformBriefing'
   | 'history.matchStage';
 
 export const messages: Record<LocaleKey, { vi: string; en: string }> = {
@@ -659,5 +660,9 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
   'source.tierOfficial': { vi: 'Chính thức', en: 'Official' },
   'source.tierTrusted': { vi: 'Tin cậy', en: 'Trusted' },
   'source.tierReview': { vi: 'Cần xem lại', en: 'Review' },
+  'source.platformBriefing': {
+    vi: 'PitchIntel — Phân tích từ mô hình thống kê',
+    en: 'PitchIntel — Statistical model preview',
+  },
   'history.matchStage': { vi: 'Trận', en: 'Match' },
 };
