@@ -8,6 +8,7 @@ import { teamRoutes } from './routes/teams';
 import { playerRoutes } from './routes/players';
 import { matchRoutes } from './routes/matches';
 import { matchIntelligenceRoutes } from './routes/matchIntelligence';
+import { scenarioPredictionRoutes } from './routes/scenarioPredictions';
 import { probabilityRoutes } from './routes/probability';
 import { searchRoutes } from './routes/search';
 import { adminRoutes } from './routes/admin';
@@ -36,7 +37,7 @@ app.use('/api/*', async (c, next) => {
     return cors({
       origin,
       allowMethods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
-      allowHeaders: ['Content-Type'],
+      allowHeaders: ['Content-Type', 'X-Admin-Token'],
     })(c, next);
   }
   return next();
@@ -47,6 +48,7 @@ app.route('/api/tournaments', tournamentRoutes);
 app.route('/api/teams', teamRoutes);
 app.route('/api/players', playerRoutes);
 app.route('/api/matches', matchIntelligenceRoutes);
+app.route('/api/matches', scenarioPredictionRoutes);
 app.route('/api/matches', matchRoutes);
 app.route('/api/matches', probabilityRoutes);
 app.route('/api/search', searchRoutes);

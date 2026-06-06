@@ -12,10 +12,12 @@ import {
   type MatchPreviewAnalysis,
   type TeamSystemPayload,
   type ScenariosPayload,
+  type MatchScenarioSet,
   type MarketSignalsPayload,
 } from '../lib/api';
 import { TeamSystemPanel } from '../components/team/TeamSystemPanel';
 import { ScenarioLikelihoodPanel } from '../components/scenarios/ScenarioLikelihoodPanel';
+import { ScenarioPredictionPanel } from '../components/scenarios/ScenarioPredictionPanel';
 import { MarketSignalPanel } from '../components/market/MarketSignalPanel';
 import { MatchPreviewAnalysisPanel } from '../components/match/MatchPreviewAnalysisPanel';
 import { MatchPageGuideStrip } from '../components/match/MatchPageGuideStrip';
@@ -61,6 +63,7 @@ export function MatchPage() {
   const [simProb, setSimProb] = useState<ReturnType<typeof adjustProbabilities> | null>(null);
   const [teamSystem, setTeamSystem] = useState<TeamSystemPayload | null>(null);
   const [scenarios, setScenarios] = useState<ScenariosPayload | null>(null);
+  const [scenarioPredictions, setScenarioPredictions] = useState<MatchScenarioSet | null>(null);
   const [marketSignals, setMarketSignals] = useState<MarketSignalsPayload | null>(null);
   const [intelLoading, setIntelLoading] = useState(true);
 
@@ -95,6 +98,7 @@ export function MatchPage() {
     Promise.all([
       api.matchTeamSystem(matchId).then((r) => setTeamSystem(r.data)).catch(() => setTeamSystem(null)),
       api.matchScenarios(matchId).then((r) => setScenarios(r.data)).catch(() => setScenarios(null)),
+      api.matchScenarioPredictions(matchId).then((r) => setScenarioPredictions(r.data)).catch(() => setScenarioPredictions(null)),
       api.matchMarketSignals(matchId).then((r) => setMarketSignals(r.data)).catch(() => setMarketSignals(null)),
     ]).finally(() => setIntelLoading(false));
   }, [matchId]);
@@ -287,6 +291,7 @@ export function MatchPage() {
         away={teamSystem?.away ?? null}
         loading={intelLoading}
       />
+      <ScenarioPredictionPanel data={scenarioPredictions} loading={intelLoading} />
       <ScenarioLikelihoodPanel data={scenarios} loading={intelLoading} />
       <MarketSignalPanel payload={marketSignals} loading={intelLoading} />
 

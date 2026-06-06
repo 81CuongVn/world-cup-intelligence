@@ -4,6 +4,7 @@ import {
   api,
   type TeamSystemPayload,
   type ScenariosPayload,
+  type MatchScenarioSet,
   type MarketSignalsPayload,
   type MatchPreviewAnalysis,
   type HistoryMatch,
@@ -11,6 +12,7 @@ import {
 } from '../lib/api';
 import { TeamSystemPanel } from '../components/team/TeamSystemPanel';
 import { ScenarioLikelihoodPanel } from '../components/scenarios/ScenarioLikelihoodPanel';
+import { ScenarioPredictionPanel } from '../components/scenarios/ScenarioPredictionPanel';
 import { MarketSignalPanel } from '../components/market/MarketSignalPanel';
 import { MatchPreviewAnalysisPanel } from '../components/match/MatchPreviewAnalysisPanel';
 import { ProbabilityStrip } from '../components/tactical/ProbabilityStrip';
@@ -29,6 +31,7 @@ export function MatchAnalysisPage() {
   const [preview, setPreview] = useState<MatchPreviewAnalysis | null>(null);
   const [teamSystem, setTeamSystem] = useState<TeamSystemPayload | null>(null);
   const [scenarios, setScenarios] = useState<ScenariosPayload | null>(null);
+  const [scenarioPredictions, setScenarioPredictions] = useState<MatchScenarioSet | null>(null);
   const [market, setMarket] = useState<MarketSignalsPayload | null>(null);
   const [teamNames, setTeamNames] = useState({ home: '', away: '' });
   const [wcHistory, setWcHistory] = useState<HistoryMatch[]>([]);
@@ -54,6 +57,7 @@ export function MatchAnalysisPage() {
       }),
       api.matchTeamSystem(matchId).then((r) => setTeamSystem(r.data)).catch(() => setTeamSystem(null)),
       api.matchScenarios(matchId).then((r) => setScenarios(r.data)).catch(() => setScenarios(null)),
+      api.matchScenarioPredictions(matchId).then((r) => setScenarioPredictions(r.data)).catch(() => setScenarioPredictions(null)),
       api.matchMarketSignals(matchId).then((r) => setMarket(r.data)).catch(() => setMarket(null)),
     ]).finally(() => setLoading(false));
   }, [matchId]);
@@ -164,6 +168,7 @@ export function MatchAnalysisPage() {
         />
       )}
       <MatchPreviewAnalysisPanel preview={preview} loading={loading} />
+      <ScenarioPredictionPanel data={scenarioPredictions} loading={loading} />
       <ScenarioLikelihoodPanel data={scenarios} loading={loading} />
       <MarketSignalPanel payload={market} loading={loading} />
       <TacticalBriefingPanel briefing={null} />

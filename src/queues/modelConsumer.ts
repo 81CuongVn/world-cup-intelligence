@@ -3,6 +3,12 @@ import type { AppEnv } from '../env';
 import { logInfo, logError } from '../utils/logger';
 import { recomputeMatchProbability } from '../services/recomputeMatch';
 import { runBulkRecomputeIfPending } from '../services/bulkRecomputeRunner';
+import {
+  generateMatchScenarios,
+  updateScenariosFromRealtimeEvent,
+  broadcastScenarioUpdate,
+} from '../services/matchScenarioService';
+import { runScenarioBacktest } from '../models/scenarios/backtesting/scenarioBacktestRunner';
 import { generateTacticalBriefing } from '../ai/tacticalBriefing';
 import { runMultiVariableAnalysis } from '../ai/multiVariableAnalysis';
 import { extractEntitiesFromArticle } from '../ai/entityExtraction';
@@ -19,6 +25,38 @@ export async function handleModelBatch(batch: MessageBatch<ModelJob>, env: AppEn
           await recomputeMatchProbability(env, msg.body.matchId);
           await env.MODEL_QUEUE?.send({ type: 'ai_briefing', matchId: msg.body.matchId });
           await env.MODEL_QUEUE?.send({ type: 'ai_multi_analyze', matchId: msg.body.matchId });
+          break;
+        case 'PRE_MATCH_RECOMPUTE':
+          await recomputeMatchProbability(env, msg.body.matchId);
+          await generateMatchScenarios(env, msg.body.matchId);
+          break;
+        case 'LIVE_RECOMPUTE': {
+          await recomputeMatchProbability(env, msg.body.matchId);
+          const liveSet = await updateScenariosFromRealtimeEvent(env, {
+            matchId: msg.body.matchId,
+            eventId: msg.body.eventId ?? crypto.randomUUID(),
+            eventType: 'live_recompute',
+            minute: 0,
+          });
+          if (liveSet) await broadcastScenarioUpdate(env, msg.body.matchId, liveSet);
+          break;
+        }
+        case 'SCENARIO_GENERATE': {
+          await generateMatchScenarios(env, msg.body.matchId);
+          break;
+        }
+        case 'SCENARIO_RECOMPUTE': {
+          const set = await updateScenariosFromRealtimeEvent(env, {
+            matchId: msg.body.matchId,
+            eventId: msg.body.eventId ?? crypto.randomUUID(),
+            eventType: 'scenario_recompute',
+            minute: 0,
+          });
+          if (set) await broadcastScenarioUpdate(env, msg.body.matchId, set);
+          break;
+        }
+        case 'SCENARIO_BACKTEST':
+          await runScenarioBacktest(env, msg.body.tournamentYear);
           break;
         case 'recompute_all':
           for (const matchId of msg.body.matchIds) {

@@ -18,6 +18,7 @@ const UI_SNIPPETS = [
   'app/components/market/ModelVsMarketChart.tsx',
   'app/components/team/TeamSystemPanel.tsx',
   'app/components/scenarios/ScenarioLikelihoodPanel.tsx',
+  'app/components/scenarios/ScenarioPredictionPanel.tsx',
   'app/components/tactical/AnalystSimulatorPanel.tsx',
   'app/pages/MatchPage.tsx',
   'app/lib/i18n/locales.ts',

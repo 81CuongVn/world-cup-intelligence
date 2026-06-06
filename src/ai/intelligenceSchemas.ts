@@ -19,6 +19,11 @@ export const ModelVsMarketExplanationSchema = z.object({
 
 export const ScenarioExplanationSchema = z.object({
   matchId: z.string(),
+  scenarioId: z.string().optional(),
+  summary: z.string(),
+  whyThisScenarioMatters: z.string().optional(),
+  keyDrivers: z.array(z.string()).optional(),
+  riskFactors: z.array(z.string()).optional(),
   highlights: z.array(
     z.object({
       scenarioType: z.string(),
@@ -26,6 +31,7 @@ export const ScenarioExplanationSchema = z.object({
     }),
   ),
   uncertaintyNotes: z.array(z.string()),
+  sourceConfidenceSummary: z.string().optional(),
   disclaimer: z.string(),
 });
 

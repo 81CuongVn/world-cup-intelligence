@@ -132,6 +132,12 @@ export type LocaleKey =
   | 'scenario.loading'
   | 'scenario.empty'
   | 'scenario.confidence'
+  | 'scenario.predictionTitle'
+  | 'scenario.predictionSubtitle'
+  | 'scenario.pathA'
+  | 'scenario.pathB'
+  | 'scenario.comparisonToggle'
+  | 'analysis.twoScenarios'
   | 'probMovement.title'
   | 'probMovement.subtitle'
   | 'probMovement.empty'
@@ -493,6 +499,18 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
     en: 'Scenario likelihoods appear after model recompute.',
   },
   'scenario.confidence': { vi: 'Độ tin cậy', en: 'Confidence' },
+  'scenario.predictionTitle': { vi: 'Dự đoán theo kịch bản', en: 'Scenario predictions' },
+  'scenario.predictionSubtitle': {
+    vi: 'Xác suất kịch bản · lộ trình xác suất · bối cảnh phân tích (không phải khuyến nghị cược)',
+    en: 'Scenario likelihood · probability path · analytical context (not betting advice)',
+  },
+  'scenario.pathA': { vi: 'Kịch bản A', en: 'Scenario A' },
+  'scenario.pathB': { vi: 'Kịch bản B', en: 'Scenario B' },
+  'scenario.comparisonToggle': { vi: 'So sánh kịch bản', en: 'Scenario comparison' },
+  'analysis.twoScenarios': {
+    vi: 'Hai kịch bản trận đấu quan trọng nhất',
+    en: 'Two most important match scenarios',
+  },
   'probMovement.title': { vi: 'Biến động xác suất', en: 'Probability movement' },
   'probMovement.subtitle': {
     vi: 'Lịch sử cập nhật mô hình cho trận này.',

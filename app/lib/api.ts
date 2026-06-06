@@ -68,6 +68,10 @@ export const api = {
     get<{ data: TeamSystemPayload; ai?: unknown }>(`/matches/${id}/team-system`),
   matchScenarios: (id: string) =>
     get<{ data: ScenariosPayload; ai?: unknown }>(`/matches/${id}/scenarios`),
+  matchScenarioPredictions: (id: string) =>
+    get<{ data: MatchScenarioSet }>(`/matches/${id}/scenario-predictions`),
+  matchScenarioComparison: (id: string) =>
+    get<{ data: unknown; ai?: unknown }>(`/matches/${id}/scenario-comparison`),
   matchMarketSignals: (id: string) =>
     get<{ data: MarketSignalsPayload }>(`/matches/${id}/market-signals`),
   matchModelVsMarket: (id: string) =>
@@ -347,6 +351,72 @@ export type ScenariosPayload = {
   matchId: string;
   scenarios: ScenarioItem[];
   disclaimer: string;
+};
+
+export type MatchPredictionScenario = {
+  id: string;
+  matchId: string;
+  scenarioType: string;
+  scenarioName: string;
+  scenarioRank: number;
+  isBaseline: boolean;
+  initialConditions: Array<{
+    condition: string;
+    value: string | number | boolean;
+    confidence: number;
+    source?: string;
+  }>;
+  triggerConditions: Array<{
+    condition: string;
+    threshold: string | number;
+    currentValue?: string | number;
+    status: 'not_triggered' | 'partially_triggered' | 'triggered';
+  }>;
+  invalidationConditions: Array<{
+    condition: string;
+    threshold: string | number;
+    currentValue?: string | number;
+    status: 'valid' | 'at_risk' | 'invalidated';
+  }>;
+  scenarioProbability: number;
+  scenarioConfidence: number;
+  homeWinProb: number;
+  drawProb: number;
+  awayWinProb: number;
+  expectedHomeGoals: number;
+  expectedAwayGoals: number;
+  mostLikelyScore: string;
+  scorelineDistribution: Record<string, number>;
+  keyDrivers: string[];
+  riskFactors: string[];
+  modelVersion: string;
+  inputHash: string;
+  status: string;
+  updatedAt: string;
+};
+
+export type MatchScenarioSet = {
+  matchId: string;
+  generatedAt: string;
+  updatedAt: string;
+  scenarios: MatchPredictionScenario[];
+  comparison: {
+    primaryScenarioId: string;
+    alternativeScenarioId: string;
+    probabilityGap: number;
+    confidenceGap: number;
+    summary: string;
+    keyDifferences: string[];
+    homeWinDelta: number;
+    drawDelta: number;
+    awayWinDelta: number;
+    xgHomeDelta: number;
+    xgAwayDelta: number;
+  };
+  sourceConfidence: {
+    overall: number;
+    notes: string[];
+  };
 };
 
 export type ModelVsMarketData = {

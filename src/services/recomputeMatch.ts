@@ -8,6 +8,7 @@ import { computeFullMatchProbability } from '../models/probability/fullMatchOutp
 import type { ProbabilityResult } from '../models/probability/types';
 import { buildMatchFeaturesWithForm } from './matchFeatures';
 import { buildModelVsMarket } from '../market/services/marketSignalService';
+import { generateMatchScenarios } from './matchScenarioService';
 import { logInfo, logError } from '../utils/logger';
 import { WC2026_TOURNAMENT_ID } from '../constants/tournament';
 
@@ -78,6 +79,10 @@ export async function recomputeMatchProbability(
   );
 
   await buildModelVsMarket(env, matchId).catch(() => undefined);
+
+  await generateMatchScenarios(env, matchId).catch((e) => {
+    logError('scenario generation failed', { match_id: matchId, error: String(e) });
+  });
 
   logInfo('probability recomputed', { match_id: matchId, model_version: result.modelVersion });
   return result;

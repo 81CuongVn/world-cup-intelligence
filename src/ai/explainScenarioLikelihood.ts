@@ -8,6 +8,7 @@ export async function explainScenarioLikelihood(
   if (!data) return null;
   return ScenarioExplanationSchema.parse({
     matchId: data.matchId,
+    summary: 'Scenario likelihood summary from statistical engine outputs.',
     highlights: data.scenarios.slice(0, 5).map((s) => ({
       scenarioType: s.scenarioType,
       narrative: `Scenario likelihood ${(s.probability * 100).toFixed(1)}% — model estimate only.`,

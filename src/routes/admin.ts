@@ -13,6 +13,11 @@ import {
   applyOfficialLineupToMatch,
   syncOfficialLineupsToMatches,
 } from '../services/officialLineupSync';
+import {
+  generateMatchScenarios,
+  updateScenariosFromRealtimeEvent,
+} from '../services/matchScenarioService';
+import * as matchPredictionScenarioRepo from '../db/repositories/matchPredictionScenarioRepo';
 
 const marketSourceSchema = z.object({
   id: z.string().min(1),
@@ -179,8 +184,30 @@ adminRoutes.post('/manual-market-input/:matchId', async (c) => {
 });
 
 adminRoutes.post('/recompute-scenarios/:matchId', async (c) => {
-  await recomputeMatchProbability(c.env, c.req.param('matchId'));
-  return c.json({ status: 'ok', matchId: c.req.param('matchId') });
+  const matchId = c.req.param('matchId');
+  if (c.env.MODEL_QUEUE) {
+    await c.env.MODEL_QUEUE.send({ type: 'SCENARIO_RECOMPUTE', matchId });
+  } else {
+    await generateMatchScenarios(c.env, matchId);
+  }
+  return c.json({ status: 'ok', matchId });
+});
+
+adminRoutes.post('/matches/:matchId/generate-scenarios', async (c) => {
+  const data = await generateMatchScenarios(c.env, c.req.param('matchId'));
+  return c.json({ data });
+});
+
+adminRoutes.post('/matches/:matchId/recompute-scenarios', async (c) => {
+  const matchId = c.req.param('matchId');
+  await recomputeMatchProbability(c.env, matchId);
+  const data = await generateMatchScenarios(c.env, matchId);
+  return c.json({ data });
+});
+
+adminRoutes.post('/matches/:matchId/scenarios/:scenarioId/archive', async (c) => {
+  await matchPredictionScenarioRepo.archiveScenario(c.env.DB, c.req.param('scenarioId'));
+  return c.json({ status: 'archived', scenarioId: c.req.param('scenarioId') });
 });
 
 adminRoutes.post('/recompute-team-system/:matchId', async (c) => {
