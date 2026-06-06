@@ -34,7 +34,7 @@ Sau mỗi trận kết thúc (cron mỗi phút):
 - **Đội hình** — badge **Chính thức / Dự kiến / Từ danh sách đội**; trang riêng `/lineups/:matchId`
 - **Cơ cấu đóng góp đội** — section riêng full-width, nhãn đầy đủ (Ép sân, Kiến tạo, …), đặt trên lịch sử đối đầu
 - **Đối đầu World Cup** — các trận giữa hai đội ở các kỳ WC trước 2026, kèm tỉ số & vòng đấu
-- Team system, kịch bản (scenarios), mô hình vs thị trường (ẩn khi không có odds)
+- Team system, **dự đoán đa kịch bản** (Scenario Predictions), kịch bản sự kiện (legacy scenarios), mô hình vs thị trường
 - Preview AI, tactical briefing, biến động xác suất theo thời gian
 - **Mobile:** header tỉ số không còn sticky — cuộn xuống đọc được toàn bộ nội dung
 
@@ -47,9 +47,33 @@ Cron mỗi phút (`refresh_minute`) và admin API:
 
 > Squad seed hiện chỉ có vài cầu thủ/đội — cần mở rộng squad hoặc nhập XI qua admin để thấy badge **Chính thức** trên web.
 
+### Dự đoán đa kịch bản (Multi-Scenario Prediction Engine)
+
+Mỗi trận có **≥ 2 kịch bản phân tích** (baseline + alternative), do **statistical engine** tính — AI chỉ giải thích, không tạo số.
+
+**Kịch bản A — Baseline / Expected Match Flow**
+- Đội hình mạnh nhất khả dụng, phong độ, team system, tactical matchup
+- W/D/L, xG, scoreline có điều kiện theo lộ trình kiểm soát bóng
+
+**Kịch bản B — Alternative / Disruption**
+- Early transition swing, pressing breakthrough, set-piece decider, low block frustration, …
+- Trigger / invalidation conditions cập nhật khi có sự kiện live
+
+**Backend** (`src/models/scenarios/`, `src/services/matchScenarioService.ts`):
+1. Chọn feature groups theo loại kịch bản (`scenarioFeatureSelector`)
+2. Chạy model xác suất (`scenarioEngine`) → scenario likelihood + W/D/L có điều kiện
+3. Lưu D1: `match_prediction_scenarios`, `scenario_comparisons`, `scenario_probability_snapshots`
+4. Snapshot feature → R2 (`scenarios/{matchId}/…`)
+5. Recompute tự động sau `recomputeMatchProbability`; queue `SCENARIO_GENERATE` / `SCENARIO_RECOMPUTE`
+6. WebSocket `SCENARIO_UPDATE` qua Durable Object `MatchRoom`
+
+**UI:** `ScenarioPredictionPanel` trên trang trận và phân tích dài — badge model confidence, so sánh kịch bản (collapse trên mobile).
+
+> Thuật ngữ: *Scenario Likelihood*, *Probability Path*, *Analytical Context* — **không** phải khuyến nghị cược.
+
 ### Phân tích dài (`/matches/:matchId/analysis`)
 - Tiêu đề trận bằng **tên đội thật** (vd. *United States vs Argentina*), kèm ngày kickoff
-- Xác suất, hệ thống đội, kịch bản, thị trường, lịch sử đối đầu WC — cập nhật real-time
+- Xác suất, hệ thống đội, **hai kịch bản quan trọng nhất**, thị trường, lịch sử đối đầu WC — cập nhật real-time
 
 ### Bài viết / News Intelligence (`/news-intelligence`)
 - RSS từ **BBC**, **The Guardian**, **FIFA**, **Reuters**, **AP**, **Sky Sports** (crawl mỗi 15 phút)
@@ -107,6 +131,10 @@ Cron (* * * * *) ──► INGEST_QUEUE ──► officialLineupSync (squad → 
                                       ├── tournamentProgression
                                       └── bulk recompute (KV flag / 104 trận)
 
+MODEL_QUEUE ──► recomputeMatch ──► generateMatchScenarios
+              ├── SCENARIO_RECOMPUTE (live events)
+              └── SCENARIO_BACKTEST (stub)
+
 Cron (*/15 * * * *) ──► crawl_news ──► RSS (6 nguồn) ──► D1 + dịch VI
 
 Cron (0 3 * * 1) ──► StatsBomb open-data pull (WC 2018/2022)
@@ -151,7 +179,7 @@ npx wrangler dev --remote --port 8787
 |--------|--------|
 | `npm run dev` | Frontend Vite |
 | `npm run build` | Build production |
-| `npm run test` | Vitest (66 tests) |
+| `npm run test` | Vitest (74 tests) |
 | `npm run pull:statsbomb` | Pull StatsBomb open-data → D1 + R2 |
 | `npm run typecheck` | TypeScript |
 | `npm run deploy` | Build + `wrangler deploy` |
@@ -199,7 +227,10 @@ Chi tiết AI Gateway: xem [BRANDING.md](./BRANDING.md). Chính sách agent: [au
 | `GET /api/matches/:id/probability` | Snapshot xác suất |
 | `GET /api/matches/:id/history` | Đối đầu WC (`worldCupHistory`, `worldCupSummary`) |
 | `GET /api/matches/:id/tactical-briefing` | Briefing AI |
-| `GET /api/matches/:id/scenarios` | Kịch bản |
+| `GET /api/matches/:id/scenarios` | Kịch bản sự kiện (legacy 10 loại) |
+| `GET /api/matches/:id/scenario-predictions` | **≥2 kịch bản** + comparison + model confidence |
+| `GET /api/matches/:id/scenario-predictions/:scenarioId` | Chi tiết 1 kịch bản + AI explain |
+| `GET /api/matches/:id/scenario-comparison` | So sánh baseline vs alternative |
 | `GET /api/matches/:id/probability-movement` | Lịch sử biến động xác suất |
 | `GET /api/teams/:id/wc-h2h` | Lịch sử WC của đội theo đối thủ |
 | `GET /api/news` | Danh sách tin (paginate, hot) |
@@ -214,6 +245,10 @@ Chi tiết AI Gateway: xem [BRANDING.md](./BRANDING.md). Chính sách agent: [au
 | `POST /api/admin/recompute/:matchId` | Recompute một trận (queue) |
 | `POST /api/admin/lineups/sync-squads` | Đồng bộ squad chính thức → trận sắp đá |
 | `POST /api/admin/matches/:matchId/lineup` | Nhập XI chính thức (≥ 7 cầu thủ) |
+| `POST /api/admin/matches/:matchId/generate-scenarios` | Tạo lại kịch bản đa scenario |
+| `POST /api/admin/matches/:matchId/recompute-scenarios` | Recompute full + scenarios |
+| `POST /api/admin/recompute-scenarios/:matchId` | Queue SCENARIO_RECOMPUTE |
+| `POST /api/admin/matches/:matchId/scenarios/:scenarioId/archive` | Archive kịch bản |
 | `POST /api/admin/ingest` | Queue bulk ingest (StatsBomb + news) |
 | `GET /api/admin/sources` | Health nguồn dữ liệu (public GET) |
 
@@ -223,7 +258,7 @@ Chi tiết AI Gateway: xem [BRANDING.md](./BRANDING.md). Chính sách agent: [au
 
 ```bash
 npm run typecheck   # ✓ pass
-npm test            # ✓ 66 tests, 21 files
+npm test            # ✓ 74 tests, 22 files
 ```
 
 **Đã kiểm tra:**
@@ -235,6 +270,7 @@ npm test            # ✓ 66 tests, 21 files
 - Market calculations, scoreline, safety copy
 - Team form stats, StatsBomb ingest, bulk recompute runner
 - Official lineup sync, lineup features cho probability engine
+- **Multi-scenario engine** (generation, comparison, realtime update, AI schema, prohibited betting copy)
 
 ---
 
@@ -245,12 +281,12 @@ app/           React UI (pages, components, i18n)
   lib/         useMatchLiveData, matchTeams, api
 src/
   routes/      Hono API
-  services/    recompute, progression, matchHistory, officialLineupSync, teamFormStats
+  services/    recompute, matchScenarioService, officialLineupSync, teamFormStats
   ingestion/   match refresh, news crawler, statsbombIngest
-  models/      probability engine
+  models/      probability engine, scenarios/ (multi-scenario prediction)
   queues/      ingest + model consumers
   scheduled/   cron
-migrations/    D1 SQL (0001–0016)
+migrations/    D1 SQL (0001–0017)
 scripts/       pull-statsbomb-open-data.mjs
 tests/         Vitest
 ```
@@ -277,6 +313,9 @@ Migration `0013_wc_historical_h2h.sql` seed các kỳ WC (1930–2022) và trậ
 - [x] StatsBomb open-data ingest (WC 2018/2022) → form stats + team ratings
 - [x] Auto bulk recompute WC 2026 khi có data mới (StatsBomb, trận kết thúc, cron fallback)
 - [x] Đồng bộ đội hình chính thức (squad / admin XI) lên từng trận + ảnh hưởng engine
+- [x] Multi-scenario prediction engine (baseline + alternative, D1 + R2 + UI + WebSocket)
+- [ ] WebSocket client auto-refresh ScenarioPredictionPanel
+- [ ] Scenario backtest đầy đủ trên WC 2018/2022 (Brier, calibration)
 - [ ] Mở rộng squad WC 2026 đủ 23 cầu thủ/đội (hiện seed thưa)
 - [ ] API dữ liệu trận thật (FIFA / partner feed) thay mock ingest
 - [ ] 8 suất hạng 3 tốt nhất → R32 trận 13–16
