@@ -10,6 +10,62 @@ import {
 import { logInfo } from '../utils/logger';
 import { nowIso } from '../utils/time';
 
+const GROUP_CODES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const;
+
+/** Eight slots on R32 matches 13–16 for best third-place qualifiers. */
+export const BEST_THIRD_R32_SLOTS: { matchId: string; slot: 'home' | 'away' }[] = [
+  { matchId: 'm-w26-r32-13', slot: 'home' },
+  { matchId: 'm-w26-r32-13', slot: 'away' },
+  { matchId: 'm-w26-r32-14', slot: 'home' },
+  { matchId: 'm-w26-r32-14', slot: 'away' },
+  { matchId: 'm-w26-r32-15', slot: 'home' },
+  { matchId: 'm-w26-r32-15', slot: 'away' },
+  { matchId: 'm-w26-r32-16', slot: 'home' },
+  { matchId: 'm-w26-r32-16', slot: 'away' },
+];
+
+function compareStandings(a: GroupStanding, b: GroupStanding): number {
+  if (b.points !== a.points) return b.points - a.points;
+  if (b.gd !== a.gd) return b.gd - a.gd;
+  if (b.gf !== a.gf) return b.gf - a.gf;
+  return a.teamId.localeCompare(b.teamId);
+}
+
+export async function areAllGroupsComplete(db: D1Database): Promise<boolean> {
+  for (const code of GROUP_CODES) {
+    if (!(await isGroupComplete(db, code))) return false;
+  }
+  return true;
+}
+
+export async function collectThirdPlaceCandidates(db: D1Database): Promise<(GroupStanding & { group: string })[]> {
+  const out: (GroupStanding & { group: string })[] = [];
+  for (const code of GROUP_CODES) {
+    const standings = await computeGroupStandings(db, code);
+    if (standings[2]) out.push({ ...standings[2], group: code });
+  }
+  return out.sort(compareStandings);
+}
+
+export async function applyBestThirdQualifiers(env: AppEnv): Promise<string[]> {
+  if (!(await areAllGroupsComplete(env.DB))) return [];
+
+  const candidates = await collectThirdPlaceCandidates(env.DB);
+  const top8 = candidates.slice(0, 8);
+  const affected = new Set<string>();
+
+  for (let i = 0; i < top8.length && i < BEST_THIRD_R32_SLOTS.length; i++) {
+    const { matchId, slot } = BEST_THIRD_R32_SLOTS[i];
+    const changed = await assignTeamToSlot(env, matchId, slot, top8[i].teamId);
+    if (changed) affected.add(matchId);
+  }
+
+  if (affected.size) {
+    logInfo('best third-place qualifiers applied', { teams: top8.length, matches: affected.size });
+  }
+  return [...affected];
+}
+
 type BracketLinkRow = {
   id: string;
   source_match_id: string | null;
@@ -195,6 +251,8 @@ export async function processMatchCompletion(env: AppEnv, matchId: string): Prom
   if (match.stage === 'Group' && match.group_code) {
     const groupTargets = await applyGroupQualifiers(env, match.group_code);
     groupTargets.forEach((id) => affected.add(id));
+    const thirdTargets = await applyBestThirdQualifiers(env);
+    thirdTargets.forEach((id) => affected.add(id));
   } else if (match.stage && match.stage !== 'Group') {
     const koTargets = await applyKnockoutLinks(env, matchId);
     koTargets.forEach((id) => affected.add(id));

@@ -1,16 +1,15 @@
 import type { AppEnv } from '../env';
+import { parseEnv } from '../env';
 import { nowIso } from '../utils/time';
 import { logInfo } from '../utils/logger';
 import { mockScoreAtMinute } from '../services/matchLifecycle';
 import { processMatchCompletion } from '../services/tournamentProgression';
+import { resolveMatchDataProvider } from './matchDataProvider';
 
 export type RefreshMatchDataResult = {
   updatedIds: string[];
   completedIds: string[];
 };
-
-const KICKOFF_WINDOW_MS = 2 * 60 * 60 * 1000;
-const MATCH_DURATION_MS = 105 * 60 * 1000;
 
 /** Near-real-time refresh: live ticks, finalize at FT, then progression + recompute. */
 export async function refreshMatchData(env: AppEnv): Promise<RefreshMatchDataResult> {
@@ -18,6 +17,7 @@ export async function refreshMatchData(env: AppEnv): Promise<RefreshMatchDataRes
   const completedIds: string[] = [];
   const now = nowIso();
   const nowMs = Date.now();
+  const provider = resolveMatchDataProvider(parseEnv(env).mockSources, mockScoreAtMinute);
 
   const { results: candidates } = await env.DB.prepare(
     `SELECT id, minute, home_score, away_score, status, kickoff_utc
@@ -35,15 +35,10 @@ export async function refreshMatchData(env: AppEnv): Promise<RefreshMatchDataRes
 
   for (const m of candidates ?? []) {
     if (!m.kickoff_utc) continue;
-    const kickoffMs = new Date(m.kickoff_utc).getTime();
-    const inWindow = nowMs >= kickoffMs - KICKOFF_WINDOW_MS && nowMs < kickoffMs + MATCH_DURATION_MS;
-    if (!inWindow) continue;
+    const tick = provider.getLiveTick(m.id, m.kickoff_utc, nowMs);
+    if (!tick) continue;
 
-    const elapsedMin = Math.max(0, Math.floor((nowMs - kickoffMs) / 60000));
-    const newMinute = Math.min(90, elapsedMin);
-    const scores = mockScoreAtMinute(m.id, newMinute);
-
-    if (newMinute >= 90) {
+    if (tick.status === 'completed') {
       await env.DB.prepare(
         `UPDATE matches
          SET status = 'completed', minute = 90,
@@ -51,14 +46,19 @@ export async function refreshMatchData(env: AppEnv): Promise<RefreshMatchDataRes
              updated_at = ?
          WHERE id = ? AND status != 'completed'`,
       )
-        .bind(scores.home, scores.away, now, m.id)
+        .bind(tick.homeScore, tick.awayScore, now, m.id)
         .run();
       completedIds.push(m.id);
-      logInfo('match finalized', { match_id: m.id, score: `${scores.home}-${scores.away}` });
+      logInfo('match finalized', { match_id: m.id, score: `${tick.homeScore}-${tick.awayScore}`, provider: provider.name });
       continue;
     }
 
-    if (m.status === 'scheduled' || m.minute !== newMinute || m.home_score !== scores.home || m.away_score !== scores.away) {
+    if (
+      m.status === 'scheduled' ||
+      m.minute !== tick.minute ||
+      m.home_score !== tick.homeScore ||
+      m.away_score !== tick.awayScore
+    ) {
       await env.DB.prepare(
         `UPDATE matches
          SET status = 'live', minute = ?,
@@ -67,7 +67,7 @@ export async function refreshMatchData(env: AppEnv): Promise<RefreshMatchDataRes
              updated_at = ?
          WHERE id = ?`,
       )
-        .bind(newMinute, scores.home, scores.away, now, m.id)
+        .bind(tick.minute, tick.homeScore, tick.awayScore, now, m.id)
         .run();
       updatedIds.push(m.id);
     }

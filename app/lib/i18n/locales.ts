@@ -10,6 +10,22 @@ export type LocaleKey =
   | 'matches.pageTitle'
   | 'matches.pageSubtitle'
   | 'matches.loading'
+  | 'matches.tabSchedule'
+  | 'matches.tabStandings'
+  | 'matches.tabBracket'
+  | 'standings.title'
+  | 'standings.subtitle'
+  | 'standings.loading'
+  | 'standings.unavailable'
+  | 'standings.complete'
+  | 'standings.team'
+  | 'standings.pts'
+  | 'standings.noResults'
+  | 'standings.thirdPlace'
+  | 'bracket.title'
+  | 'bracket.subtitle'
+  | 'bracket.loading'
+  | 'bracket.empty'
   | 'nav.articles'
   | 'nav.more'
   | 'news.pageTitle'
@@ -308,6 +324,28 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
     en: 'Live or next-up match on top — full World Cup 2026 schedule below.',
   },
   'matches.loading': { vi: 'Đang tải lịch thi đấu…', en: 'Loading match schedule…' },
+  'matches.tabSchedule': { vi: 'Lịch thi đấu', en: 'Schedule' },
+  'matches.tabStandings': { vi: 'Bảng xếp hạng', en: 'Standings' },
+  'matches.tabBracket': { vi: 'Nhánh đấu', en: 'Bracket' },
+  'standings.title': { vi: 'Bảng xếp hạng vòng bảng', en: 'Group stage standings' },
+  'standings.subtitle': {
+    vi: 'Top 2 vào Vòng 1/16 · 8 hạng 3 tốt nhất vào các trận R32 13–16',
+    en: 'Top 2 advance to R32 · 8 best third-place teams fill R32 matches 13–16',
+  },
+  'standings.loading': { vi: 'Đang tải bảng…', en: 'Loading standings…' },
+  'standings.unavailable': { vi: 'Chưa có dữ liệu bảng.', en: 'Standings unavailable.' },
+  'standings.complete': { vi: 'Xong', en: 'Done' },
+  'standings.team': { vi: 'Đội', en: 'Team' },
+  'standings.pts': { vi: 'Đ', en: 'Pts' },
+  'standings.noResults': { vi: 'Chưa có trận kết thúc', en: 'No finished matches yet' },
+  'standings.thirdPlace': { vi: 'Xếp hạng hạng 3 (8 suất tốt nhất → R32)', en: 'Third-place ranking (top 8 → R32)' },
+  'bracket.title': { vi: 'Nhánh knockout', en: 'Knockout bracket' },
+  'bracket.subtitle': {
+    vi: 'Vòng 1/16 → Chung kết — bấm trận để mở phân tích',
+    en: 'Round of 32 → Final — tap a match for analysis',
+  },
+  'bracket.loading': { vi: 'Đang tải nhánh…', en: 'Loading bracket…' },
+  'bracket.empty': { vi: 'Chưa có trận knockout.', en: 'No knockout matches yet.' },
   'nav.articles': { vi: 'Bài viết', en: 'Articles' },
   'nav.more': { vi: 'Thêm', en: 'More' },
   'news.pageTitle': { vi: 'Tin World Cup', en: 'World Cup News' },

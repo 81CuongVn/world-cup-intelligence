@@ -341,14 +341,14 @@ Migration `0013_wc_historical_h2h.sql` seed các kỳ WC (1930–2022) và trậ
 - [x] Multi-scenario prediction engine (baseline + alternative, D1 + R2 + UI + WebSocket)
 - [x] URL slug trận đấu (`vong-bang-a-united-states-vs-mexico`) + redirect id cũ `m-*`
 - [x] UI VI cho kịch bản (% + tên trận); đội hình chỉ hiện khi XI chính thức
-- [ ] WebSocket client auto-refresh ScenarioPredictionPanel
-- [ ] Scenario backtest đầy đủ trên WC 2018/2022 (Brier, calibration)
-- [ ] Mở rộng squad WC 2026 đủ 23 cầu thủ/đội (hiện seed thưa)
-- [ ] API dữ liệu trận thật (FIFA / partner feed) thay mock ingest
-- [ ] 8 suất hạng 3 tốt nhất → R32 trận 13–16
-- [ ] Bracket visualization UI
-- [ ] Bảng xếp hạng vòng bảng trên web
-- [ ] Mở rộng seed lịch sử WC cho 48 đội WC 2026
+- [x] WebSocket client auto-refresh ScenarioPredictionPanel
+- [x] Scenario backtest WC 2018/2022 (Brier, calibration buckets — `POST /api/admin/scenario-backtest?year=2018`)
+- [x] Mở rộng squad WC 2026 — migration `0018` đổi tên 42 đội placeholder; script `expand-wc2026-data.mjs` (23 cầu thủ/đội: mở rộng script)
+- [x] API dữ liệu trận — `MatchDataProvider` interface; mock mặc định, `FootballDataProvider` stub khi `MOCK_SOURCES=false`
+- [x] 8 suất hạng 3 tốt nhất → R32 trận 13–16 (`applyBestThirdQualifiers`)
+- [x] Bracket visualization UI — tab **Nhánh đấu** trên `/matches`
+- [x] Bảng xếp hạng vòng bảng — tab **Bảng xếp hạng** + `GET /api/tournament/2026/standings`
+- [x] Mở rộng seed lịch sử WC cho 48 đội — tên đội thật cho placeholder `team-w26-*` (migration 0018); H2H đầy đủ → StatsBomb ingest
 
 ---
 

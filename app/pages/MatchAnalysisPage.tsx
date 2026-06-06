@@ -25,13 +25,12 @@ import { useMatchLiveData } from '../lib/useMatchLiveData';
 import { useI18n } from '../lib/i18n/I18nContext';
 import { resolveMatchHref } from '../lib/matchPaths';
 import { useLegacyMatchRedirect } from '../lib/useLegacyMatchRedirect';
+import { useMatchScenarioLive } from '../lib/useMatchScenarioLive';
 import { matchAnalysisPath } from '@/utils/matchSlug';
 
 export function MatchAnalysisPage() {
   const { matchId } = useParams();
   const { t, mode } = useI18n();
-  const { match, prob } = useMatchLiveData(matchId);
-  useLegacyMatchRedirect(matchId, match?.slug, matchAnalysisPath);
   const [preview, setPreview] = useState<MatchPreviewAnalysis | null>(null);
   const [teamSystem, setTeamSystem] = useState<TeamSystemPayload | null>(null);
   const [scenarios, setScenarios] = useState<ScenariosPayload | null>(null);
@@ -41,6 +40,10 @@ export function MatchAnalysisPage() {
   const [wcHistory, setWcHistory] = useState<HistoryMatch[]>([]);
   const [wcSummary, setWcSummary] = useState<H2HSummary | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const { match, prob } = useMatchLiveData(matchId);
+  useLegacyMatchRedirect(matchId, match?.slug, matchAnalysisPath);
+  useMatchScenarioLive(matchId, setScenarioPredictions, !!matchId);
 
   useEffect(() => {
     if (!matchId) return;

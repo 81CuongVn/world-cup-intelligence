@@ -92,6 +92,10 @@ export const api = {
   players: () => get<{ data: PlayerSummary[] }>('/players'),
   player: (id: string) => get<{ data: PlayerSummary }>(`/players/${id}`),
   search: (q: string) => get<{ data: Record<string, unknown[]> }>(`/search?q=${encodeURIComponent(q)}`),
+  tournamentStandings: (year = 2026) =>
+    get<{ data: GroupStandingsPayload }>(`/tournaments/${year}/standings`),
+  tournamentBracket: (year = 2026) =>
+    get<{ data: BracketPayload }>(`/tournaments/${year}/bracket`),
   matchAnalysis: (id: string) =>
     get<{ data: MultiVariableAnalysis | null; meta?: { gatewayConfigured?: boolean } }>(
       `/analysis/${id}`,
@@ -188,6 +192,44 @@ export type ScheduleMatch = {
   home_short?: string;
   away_short?: string;
   match_date?: string;
+};
+
+export type StandingRow = {
+  teamId: string;
+  teamName: string;
+  shortName: string | null;
+  rank: number;
+  played: number;
+  points: number;
+  gf: number;
+  ga: number;
+  gd: number;
+  isThirdPlaceCandidate?: boolean;
+};
+
+export type GroupStandingsPayload = {
+  tournamentId: string;
+  groups: Record<string, { complete: boolean; rows: StandingRow[] }>;
+  thirdPlaceRanking: Array<StandingRow & { group: string }>;
+};
+
+export type BracketMatchNode = {
+  id: string;
+  slug: string;
+  stage: string | null;
+  kickoffUtc: string;
+  status: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  homeName: string;
+  awayName: string;
+  homeScore: number;
+  awayScore: number;
+};
+
+export type BracketPayload = {
+  tournamentId: string;
+  rounds: { stage: string; matches: BracketMatchNode[] }[];
 };
 
 export type NewsArticle = {

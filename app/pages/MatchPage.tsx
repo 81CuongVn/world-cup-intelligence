@@ -45,14 +45,13 @@ import { pickLocalized } from '../lib/briefingText';
 import { useI18n } from '../lib/i18n/I18nContext';
 import { resolveMatchAnalysisHref } from '../lib/matchPaths';
 import { useLegacyMatchRedirect } from '../lib/useLegacyMatchRedirect';
+import { useMatchScenarioLive } from '../lib/useMatchScenarioLive';
 import { matchPagePath } from '@/utils/matchSlug';
 
 export function MatchPage() {
   const { matchId } = useParams();
   const { t, mode } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('tactical');
-  const { match, prob, loadError } = useMatchLiveData(matchId);
-  useLegacyMatchRedirect(matchId, match?.slug, matchPagePath);
   const [briefing, setBriefing] = useState<TacticalBriefing | null>(null);
   const [events, setEvents] = useState<{ x?: number; y?: number; event_type?: string; xg?: number }[]>([]);
   const [analysis, setAnalysis] = useState<MultiVariableAnalysis | null>(null);
@@ -70,6 +69,10 @@ export function MatchPage() {
   const [scenarioPredictions, setScenarioPredictions] = useState<MatchScenarioSet | null>(null);
   const [marketSignals, setMarketSignals] = useState<MarketSignalsPayload | null>(null);
   const [intelLoading, setIntelLoading] = useState(true);
+
+  const { match, prob, loadError } = useMatchLiveData(matchId);
+  useLegacyMatchRedirect(matchId, match?.slug, matchPagePath);
+  useMatchScenarioLive(matchId, setScenarioPredictions, !!matchId);
 
   useEffect(() => {
     if (!matchId) return;

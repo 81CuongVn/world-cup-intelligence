@@ -33,3 +33,19 @@ tournamentRoutes.get('/:year/teams', async (c) => {
   const teams = await teamsRepo.getTeamsByTournament(c.env.DB, tournament.id);
   return c.json({ data: teams });
 });
+
+tournamentRoutes.get('/:year/standings', async (c) => {
+  const year = Number(c.req.param('year'));
+  if (year !== 2026) return c.json({ error: 'Not found' }, 404);
+  const { buildGroupStandingsPayload } = await import('../services/tournamentStandings');
+  const data = await buildGroupStandingsPayload(c.env);
+  return c.json({ data });
+});
+
+tournamentRoutes.get('/:year/bracket', async (c) => {
+  const year = Number(c.req.param('year'));
+  if (year !== 2026) return c.json({ error: 'Not found' }, 404);
+  const { buildBracketPayload } = await import('../services/bracketPayload');
+  const data = await buildBracketPayload(c.env);
+  return c.json({ data });
+});

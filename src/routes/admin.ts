@@ -124,6 +124,13 @@ adminRoutes.post('/backtest', async (c) => {
   return c.json({ data: summary });
 });
 
+adminRoutes.post('/scenario-backtest', async (c) => {
+  const year = Number(c.req.query('year') ?? '2018');
+  const { runScenarioBacktest } = await import('../models/scenarios/backtesting/scenarioBacktestRunner');
+  const data = await runScenarioBacktest(c.env, year);
+  return c.json({ data });
+});
+
 adminRoutes.get('/sources', async (c) => {
   const data = await sourcesRepo.listSources(c.env.DB);
   return c.json({ data });

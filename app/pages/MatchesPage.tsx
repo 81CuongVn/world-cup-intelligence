@@ -2,12 +2,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, type ProbabilityData, type ScheduleMatch } from '../lib/api';
 import { MatchScheduleCalendar } from '../components/home/MatchScheduleCalendar';
 import { FeaturedMatchHero } from '../components/home/FeaturedMatchHero';
+import { BracketPanel, GroupStandingsGrid } from '../components/tournament/TournamentPanels';
 import { Bilingual } from '../components/i18n/Bilingual';
+import { useI18n } from '../lib/i18n/I18nContext';
 
 const REFRESH_MS = 30_000;
 const WC2026_TOTAL = 104;
 
+type Tab = 'schedule' | 'standings' | 'bracket';
+
 export function MatchesPage() {
+  const { t } = useI18n();
+  const [tab, setTab] = useState<Tab>('schedule');
   const [schedule, setSchedule] = useState<Record<string, ScheduleMatch[]>>({});
   const [matches, setMatches] = useState<ScheduleMatch[]>([]);
   const [featured, setFeatured] = useState<
@@ -36,6 +42,12 @@ export function MatchesPage() {
     return () => clearInterval(timer);
   }, [load]);
 
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'schedule', label: t('matches.tabSchedule') },
+    { id: 'standings', label: t('matches.tabStandings') },
+    { id: 'bracket', label: t('matches.tabBracket') },
+  ];
+
   return (
     <div className="space-y-8">
       <header>
@@ -51,27 +63,57 @@ export function MatchesPage() {
         />
       </header>
 
-      {loading ? (
-        <div className="panel text-muted">
-          <Bilingual k="matches.loading" />
-        </div>
-      ) : (
-        <>
-          {featured ? (
-            <FeaturedMatchHero match={featured} />
-          ) : (
-            <div className="panel flex min-h-[160px] items-center justify-center text-muted">
-              <Bilingual k="home.noFeatured" />
-            </div>
-          )}
+      <div className="flex flex-wrap gap-2">
+        {tabs.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setTab(item.id)}
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+              tab === item.id
+                ? 'border-pressing bg-pressing/15 text-pressing'
+                : 'border-border text-muted hover:border-pressing/40'
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
 
-          <MatchScheduleCalendar
-            byDate={schedule}
-            matches={matches}
-            totalExpected={WC2026_TOTAL}
-          />
-        </>
+      {tab === 'standings' && (
+        <div className="panel">
+          <GroupStandingsGrid />
+        </div>
       )}
+
+      {tab === 'bracket' && (
+        <div className="panel">
+          <BracketPanel />
+        </div>
+      )}
+
+      {tab === 'schedule' &&
+        (loading ? (
+          <div className="panel text-muted">
+            <Bilingual k="matches.loading" />
+          </div>
+        ) : (
+          <>
+            {featured ? (
+              <FeaturedMatchHero match={featured} />
+            ) : (
+              <div className="panel flex min-h-[160px] items-center justify-center text-muted">
+                <Bilingual k="home.noFeatured" />
+              </div>
+            )}
+
+            <MatchScheduleCalendar
+              byDate={schedule}
+              matches={matches}
+              totalExpected={WC2026_TOTAL}
+            />
+          </>
+        ))}
     </div>
   );
 }
