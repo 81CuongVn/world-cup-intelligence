@@ -82,6 +82,17 @@ function mapUiSource(sourceType: string | null, isOfficial: boolean): LineupUiSo
   return 'unknown';
 }
 
+const GROUP_ORDER: LineupPositionGroup[] = ['GK', 'DEF', 'MID', 'FWD'];
+
+function sortLineupStarters(starters: LineupPlayerEntry[]): LineupPlayerEntry[] {
+  return [...starters].sort((a, b) => {
+    const ga = GROUP_ORDER.indexOf(a.positionGroup);
+    const gb = GROUP_ORDER.indexOf(b.positionGroup);
+    if (ga !== gb) return ga - gb;
+    return (a.shirtNumber ?? 999) - (b.shirtNumber ?? 999);
+  });
+}
+
 function groupPlayers(entries: LineupPlayerEntry[]): Record<LineupPositionGroup, LineupPlayerEntry[]> {
   const grouped: Record<LineupPositionGroup, LineupPlayerEntry[]> = {
     GK: [],
@@ -91,6 +102,9 @@ function groupPlayers(entries: LineupPlayerEntry[]): Record<LineupPositionGroup,
   };
   for (const e of entries) {
     grouped[e.positionGroup].push(e);
+  }
+  for (const key of GROUP_ORDER) {
+    grouped[key].sort((a, b) => (a.shirtNumber ?? 999) - (b.shirtNumber ?? 999));
   }
   return grouped;
 }
@@ -103,7 +117,7 @@ function buildDisplayFromEntries(
   hasAccurateLineup: boolean,
   confidence: number | null,
 ): LineupDisplay {
-  const starters = entries.filter((e) => e.isStarter);
+  const starters = sortLineupStarters(entries.filter((e) => e.isStarter));
   const substitutes = entries.filter((e) => !e.isStarter);
   return {
     formation,
@@ -266,8 +280,16 @@ async function loadSquadFallback(
   const rows = results ?? [];
   if (rows.length < 7) return null;
 
-  const offset = hashString(`${matchId}:${teamId}`) % Math.max(1, rows.length - 10);
-  const picked = rows.slice(offset, offset + 11);
+  const isGoalkeeper = (r: (typeof rows)[0]) => {
+    const pos = normalizeLineupPosition(r.listed_position, null, r.position);
+    return lineupPositionGroup(pos) === 'GK';
+  };
+
+  const gk = rows.find(isGoalkeeper) ?? rows[0];
+  const outfield = rows.filter((r) => r !== gk);
+  const offset = hashString(`${matchId}:${teamId}`) % Math.max(1, outfield.length - 10);
+  const pickedOutfield = outfield.slice(offset, offset + 10);
+  const picked = [gk, ...pickedOutfield];
   const bench = rows.filter((r) => !picked.includes(r)).slice(0, 5);
 
   const toEntry = (r: (typeof rows)[0], isStarter: boolean): LineupPlayerEntry => {

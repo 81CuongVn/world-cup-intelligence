@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useI18n } from '../../lib/i18n/I18nContext';
 import { lineupSourceBadgeClass, lineupSourceLocaleKey } from '../../lib/lineupSourceLabel';
-import { formatLineupPlayerLine } from '../../lib/lineupDisplay';
+import { sortLineupPlayers } from '../../lib/lineupDisplay';
 import type { MatchLineupSide } from '../../lib/api';
 import { lineupPagePath } from '@/utils/matchSlug';
 
@@ -60,16 +60,32 @@ export function MatchLineupSidePanel({ side, label, matchRef, compact = false }:
       (side.lineupPlayers?.length ?? 0) >= 7 ||
       (side.players?.length ?? 0) >= 7);
 
-  const starters =
+  const rawStarters =
     side.starters ??
     side.lineupPlayers?.map((p) => ({
-      ...p,
+      shirtNumber: p.shirtNumber,
+      name: p.name,
+      position: p.position,
       positionGroup: 'MID' as const,
-      isStarter: true,
+      isStarter: true as const,
     })) ??
     [];
 
-  const substitutes = side.substitutes ?? [];
+  const starters = sortLineupPlayers(
+    rawStarters.map((p) => ({
+      shirtNumber: p.shirtNumber,
+      name: p.name,
+      position: p.position,
+    })),
+  );
+
+  const substitutes = sortLineupPlayers(
+    (side.substitutes ?? []).map((p) => ({
+      shirtNumber: p.shirtNumber,
+      name: p.name,
+      position: p.position,
+    })),
+  );
   const grouped = side.grouped;
 
   return (
@@ -120,10 +136,13 @@ export function MatchLineupSidePanel({ side, label, matchRef, compact = false }:
         </div>
       ) : (
         <ul className="mt-2 space-y-0.5">
-          {starters.map((p, i) => (
-            <li key={`${p.name}-${i}`} className="font-mono-data text-[11px] text-foreground/90">
-              {formatLineupPlayerLine(p)}
-            </li>
+          {starters.map((p) => (
+            <PlayerRow
+              key={`${p.shirtNumber ?? 'x'}-${p.name}-${p.position}`}
+              shirtNumber={p.shirtNumber}
+              name={p.name}
+              position={p.position}
+            />
           ))}
         </ul>
       )}

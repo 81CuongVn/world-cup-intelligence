@@ -124,8 +124,7 @@ export function MatchPreviewAnalysisPanel({ preview, loading, variant = 'default
       </div>
 
       <div>
-        <p className="label-tactical mb-2 text-magenta">{t('match.previewLineup')}</p>
-        <p className="mb-3 text-sm text-muted">{pick(preview.sections.lineup)}</p>
+        <p className="label-tactical mb-3 text-magenta">{t('match.previewLineup')}</p>
         <div className="grid gap-3 md:grid-cols-2">
           <LineupColumn side={preview.home} label={t('common.home')} matchRef={preview.matchId} />
           <LineupColumn side={preview.away} label={t('common.away')} matchRef={preview.matchId} />

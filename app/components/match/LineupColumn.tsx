@@ -19,12 +19,7 @@ export function LineupColumn({
         hasLineup: (side.fullLineup?.length ?? 0) >= 7,
         source: side.lineupSource,
         lineupPlayers: side.lineupPlayers,
-        players: side.fullLineup,
-        starters: side.lineupPlayers?.map((p) => ({
-          ...p,
-          positionGroup: 'MID' as const,
-          isStarter: true,
-        })),
+        starters: side.lineupPlayers,
       }}
       label={label}
       matchRef={matchRef}
