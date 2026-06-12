@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../env';
 import { isGatewayConfigured } from '../ai/gatewayClient';
 import { parseEnv } from '../env';
+import { NEWS_CRAWL_INTERVAL_SEC, NEWS_CRAWL_KV_KEY } from '../constants/pipeline';
 
 export const healthRoutes = new Hono<{ Bindings: AppEnv }>();
 
@@ -14,7 +15,7 @@ healthRoutes.get('/', async (c) => {
     dbOk = false;
   }
   const lastRefresh = await c.env.KV.get('meta:last_data_refresh');
-  const lastNewsCrawl = await c.env.KV.get('meta:last_news_crawl');
+  const lastNewsCrawl = await c.env.KV.get(NEWS_CRAWL_KV_KEY);
   return c.json({
     status: dbOk ? 'healthy' : 'degraded',
     environment: parseEnv(c.env).environment,
@@ -27,7 +28,7 @@ healthRoutes.get('/', async (c) => {
     },
     pipeline: {
       dataRefreshIntervalSec: 60,
-      newsCrawlIntervalSec: 900,
+      newsCrawlIntervalSec: NEWS_CRAWL_INTERVAL_SEC,
       lastDataRefresh: lastRefresh,
       lastNewsCrawl,
     },

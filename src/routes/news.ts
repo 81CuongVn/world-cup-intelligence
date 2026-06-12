@@ -1,6 +1,10 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../env';
-import type { IngestJob } from '../queues/types';
+import {
+  NEWS_CRAWL_INTERVAL_SEC,
+  NEWS_CRAWL_KV_KEY,
+} from '../constants/pipeline';
+import { ensureNewsCrawlFresh } from '../services/pipelineBootstrap';
 import {
   compressAndStoreNewsImage,
   newsThumbnailR2Key,
@@ -139,7 +143,9 @@ newsRoutes.get('/assets/:docId', async (c) => {
 });
 
 newsRoutes.get('/', async (c) => {
-  const lastCrawl = await c.env.KV.get('meta:last_news_crawl');
+  c.executionCtx.waitUntil(ensureNewsCrawlFresh(c.env).catch(() => undefined));
+
+  const lastCrawl = await c.env.KV.get(NEWS_CRAWL_KV_KEY);
   const lastThumbBackfill = await c.env.KV.get('meta:last_news_thumb_backfill');
   const lastThumbRecompress = await c.env.KV.get('meta:last_news_thumb_recompress');
   const lastSourceBackfill = await c.env.KV.get('meta:last_news_source_backfill');
@@ -183,10 +189,6 @@ newsRoutes.get('/', async (c) => {
         }),
       ),
     );
-  }
-  if (!lastCrawl && c.env.INGEST_QUEUE) {
-    const job: IngestJob = { type: 'crawl_news', idempotencyKey: crypto.randomUUID() };
-    await c.env.INGEST_QUEUE.send(job).catch(() => undefined);
   }
 
   const page = Math.max(1, Number(c.req.query('page') ?? 1));
@@ -261,7 +263,7 @@ newsRoutes.get('/', async (c) => {
         totalPages,
         hotCount: hot.length,
         lastCrawl,
-        crawlIntervalSec: 900,
+        crawlIntervalSec: NEWS_CRAWL_INTERVAL_SEC,
         cdnAssets: true,
       },
     },

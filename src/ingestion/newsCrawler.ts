@@ -3,6 +3,7 @@ import { WC_NEWS_FEEDS, parseRssItems, isWorldCupRelated } from './adapters/Trus
 import { fetchFifaWc2026NewsItems } from './adapters/FifaWc2026NewsAdapter';
 import { backfillNewsThumbnails } from '../services/newsThumbnailBackfill';
 import { publishNewsArticle } from '../services/newsPublish';
+import { NEWS_CRAWL_KV_KEY } from '../constants/pipeline';
 import { nowIso } from '../utils/time';
 import { logInfo, logError } from '../utils/logger';
 
@@ -54,7 +55,7 @@ export async function crawlWorldCupNews(env: AppEnv): Promise<number> {
 
   await backfillNewsThumbnails(env, 60);
 
-  await env.KV.put('meta:last_news_crawl', nowIso(), { expirationTtl: 86400 });
+  await env.KV.put(NEWS_CRAWL_KV_KEY, nowIso(), { expirationTtl: 86400 });
   logInfo('news crawl complete', { inserted });
   return inserted;
 }

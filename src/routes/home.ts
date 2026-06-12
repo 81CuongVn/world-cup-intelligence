@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../env';
-import { ensurePipelineFresh } from '../services/pipelineBootstrap';
+import { ensureNewsCrawlFresh, ensurePipelineFresh } from '../services/pipelineBootstrap';
 import { buildDashboardPayload } from '../services/dashboardPayload';
 import { buildSchedulePayload } from '../services/schedulePayload';
 import { fetchHotNewsArticles } from '../services/newsListPayload';
@@ -9,7 +9,12 @@ export const homeRoutes = new Hono<{ Bindings: AppEnv }>();
 
 /** Single round-trip payload for the homepage (schedule + dashboard + hot news). */
 homeRoutes.get('/', async (c) => {
-  c.executionCtx.waitUntil(ensurePipelineFresh(c.env).catch(() => undefined));
+  c.executionCtx.waitUntil(
+    Promise.all([
+      ensurePipelineFresh(c.env).catch(() => undefined),
+      ensureNewsCrawlFresh(c.env).catch(() => undefined),
+    ]),
+  );
 
   const tournament = c.req.query('tournament') ?? 't-2026';
   const [schedule, dashboard, hot] = await Promise.all([

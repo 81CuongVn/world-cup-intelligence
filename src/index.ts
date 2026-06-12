@@ -108,9 +108,9 @@ export default {
   async scheduled(
     controller: ScheduledController,
     env: AppEnv,
-    _ctx: ExecutionContext,
+    ctx: ExecutionContext,
   ): Promise<void> {
-    await handleScheduledCron(env, controller.cron);
+    await handleScheduledCron(env, controller.cron, ctx);
   },
   async queue(batch: MessageBatch<IngestJob | ModelJob>, env: AppEnv): Promise<void> {
     const first = batch.messages[0]?.body;
