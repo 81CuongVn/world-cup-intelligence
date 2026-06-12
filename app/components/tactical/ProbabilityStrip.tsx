@@ -2,6 +2,7 @@ import { pct, xg } from '../../lib/format';
 import { compactTeamLabel } from '../../lib/matchTeams';
 import { useI18n } from '../../lib/i18n/I18nContext';
 import { SectionLabel } from './SectionLabel';
+import { DataKindMark, DataKindLegend } from '../ui/DataKindBadge';
 
 type Props = {
   homeWin: number;
@@ -78,6 +79,7 @@ export function ProbabilityStrip({
           title={simulated ? t('simulator.scenarioOutput') : t('simulator.winProb')}
           subtitle={simulated ? t('probStrip.subtitleSim') : t('probStrip.subtitle')}
           accent={simulated ? 'lime' : 'cyan'}
+          dataKind={simulated ? 'simulated' : 'predicted'}
           className="mb-0 min-w-0 flex-1"
         />
         <div className="flex flex-wrap items-center gap-2">
@@ -89,11 +91,14 @@ export function ProbabilityStrip({
           )}
           {confidence != null && (
             <span className="font-mono-data text-sm font-medium text-cyan">
+              <DataKindMark kind={simulated ? 'simulated' : 'predicted'} />
               {t('match.confidence')} {pct(confidence)}
             </span>
           )}
         </div>
       </div>
+
+      <DataKindLegend className="mt-2" />
 
       <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-background2 ring-1 ring-border/80 sm:h-3">
         {segments.map((s) => (
@@ -126,10 +131,12 @@ export function ProbabilityStrip({
               <p
                 className={`mt-0.5 font-mono-data text-sm font-semibold tabular-nums leading-none sm:mt-1 sm:text-xl md:text-2xl ${s.text}`}
               >
+                <DataKindMark kind={simulated ? 'simulated' : 'predicted'} />
                 {pct(s.value)}
               </p>
               {s.xgVal != null ? (
                 <p className="mt-1 font-mono-data text-[10px] text-muted sm:mt-1.5 sm:text-xs">
+                  <DataKindMark kind={simulated ? 'simulated' : 'predicted'} />
                   xG{' '}
                   <span className={`font-medium ${s.text}`}>{xg(s.xgVal)}</span>
                 </p>

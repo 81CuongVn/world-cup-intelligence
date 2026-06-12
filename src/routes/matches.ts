@@ -4,11 +4,16 @@ import * as eventsRepo from '../db/repositories/eventsRepo';
 import * as lineupsRepo from '../db/repositories/lineupsRepo';
 import * as probabilityRepo from '../db/repositories/probabilityRepo';
 import { getHeadToHead } from '../services/matchHistory';
+import { getPitchMapPayload } from '../services/pitchMap';
 import { buildProbabilityHints } from '../services/matchHints';
 import { getMatchPreviewAnalysis } from '../services/matchPreviewAnalysis';
-import { getLineupDisplayForMatch } from '../services/lineupDisplay';
+import { getLineupDisplayForMatch, ensureMatchLineups } from '../services/lineupDisplay';
 import { resolveMatchRef, listMatchesWithSlug } from '../services/matchRef';
 import { getMatchStats } from '../services/matchStats';
+import { getMatchRecap } from '../services/matchRecap';
+import { getMatchStaff } from '../services/matchStaff';
+import { parseEnv } from '../env';
+import { shouldSyncFifaMatch, syncFifaMatchByRef } from '../ingestion/fifa/fifaLiveSync';
 import * as teamsRepo from '../db/repositories/teamsRepo';
 
 export const matchRoutes = new Hono<{ Bindings: AppEnv }>();
@@ -26,6 +31,14 @@ matchRoutes.get('/', async (c) => {
 matchRoutes.get('/:matchId', async (c) => {
   const resolved = await loadMatch(c);
   if (!resolved) return c.json({ error: 'Not found' }, 404);
+
+  const cfg = parseEnv(c.env);
+  if ((cfg.fifaLiveEnabled || !cfg.mockSources) && (await shouldSyncFifaMatch(c.env, resolved.id, resolved.status))) {
+    await syncFifaMatchByRef(c.env, resolved.id).catch(() => undefined);
+    const fresh = await loadMatch(c);
+    return c.json({ data: fresh ?? resolved });
+  }
+
   return c.json({ data: resolved });
 });
 
@@ -47,34 +60,39 @@ matchRoutes.get('/:matchId/lineups', async (c) => {
   ]);
   if (!homeTeam || !awayTeam) return c.json({ error: 'Teams not found' }, 404);
 
+  await ensureMatchLineups(c.env, matchId);
+
   const [homeDisplay, awayDisplay, raw] = await Promise.all([
-    getLineupDisplayForMatch(c.env, matchId, homeTeam.id),
-    getLineupDisplayForMatch(c.env, matchId, awayTeam.id),
+    getLineupDisplayForMatch(c.env, matchId, homeTeam.id, homeTeam.name),
+    getLineupDisplayForMatch(c.env, matchId, awayTeam.id, awayTeam.name),
     lineupsRepo.getMatchLineups(c.env.DB, matchId),
   ]);
+
+  const sidePayload = (
+    team: { id: string; name: string },
+    display: Awaited<ReturnType<typeof getLineupDisplayForMatch>>,
+  ) => ({
+    teamId: team.id,
+    teamName: team.name,
+    formation: display.formation,
+    players: display.displayLines,
+    lineupPlayers: display.players,
+    starters: display.starters,
+    substitutes: display.substitutes,
+    grouped: display.grouped,
+    hasAccurateLineup: display.hasAccurateLineup,
+    hasLineup: display.starters.length >= 7,
+    source: display.source,
+    sourceType: display.sourceType,
+    confidence: display.confidence,
+  });
 
   return c.json({
     data: {
       matchId,
       slug: resolved.slug,
-      home: {
-        teamId: homeTeam.id,
-        teamName: homeTeam.name,
-        formation: homeDisplay.formation,
-        players: homeDisplay.displayLines,
-        lineupPlayers: homeDisplay.players,
-        hasAccurateLineup: homeDisplay.hasAccurateLineup,
-        source: homeDisplay.source,
-      },
-      away: {
-        teamId: awayTeam.id,
-        teamName: awayTeam.name,
-        formation: awayDisplay.formation,
-        players: awayDisplay.displayLines,
-        lineupPlayers: awayDisplay.players,
-        hasAccurateLineup: awayDisplay.hasAccurateLineup,
-        source: awayDisplay.source,
-      },
+      home: sidePayload(homeTeam, homeDisplay),
+      away: sidePayload(awayTeam, awayDisplay),
       records: raw,
     },
   });
@@ -84,6 +102,14 @@ matchRoutes.get('/:matchId/history', async (c) => {
   const resolved = await loadMatch(c);
   if (!resolved) return c.json({ error: 'Not found' }, 404);
   const data = await getHeadToHead(c.env, resolved.id);
+  if (!data) return c.json({ error: 'Not found' }, 404);
+  return c.json({ data });
+});
+
+matchRoutes.get('/:matchId/pitch-map', async (c) => {
+  const resolved = await loadMatch(c);
+  if (!resolved) return c.json({ error: 'Not found' }, 404);
+  const data = await getPitchMapPayload(c.env, resolved.id);
   if (!data) return c.json({ error: 'Not found' }, 404);
   return c.json({ data });
 });
@@ -142,6 +168,18 @@ matchRoutes.get('/:matchId/hints', async (c) => {
 
 matchRoutes.get('/:matchId/stats', async (c) => {
   const data = await getMatchStats(c.env, c.req.param('matchId'));
+  if (!data) return c.json({ error: 'Not found' }, 404);
+  return c.json({ data });
+});
+
+matchRoutes.get('/:matchId/recap', async (c) => {
+  const data = await getMatchRecap(c.env, c.req.param('matchId'));
+  if (!data) return c.json({ error: 'Not found' }, 404);
+  return c.json({ data });
+});
+
+matchRoutes.get('/:matchId/staff', async (c) => {
+  const data = await getMatchStaff(c.env, c.req.param('matchId'));
   if (!data) return c.json({ error: 'Not found' }, 404);
   return c.json({ data });
 });

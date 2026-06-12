@@ -8,6 +8,7 @@ import {
   type MultiVariableAnalysis,
   type HistoryMatch,
   type H2HSummary,
+  type TeamRecentWcMatch,
   type ProbabilityHint,
   type MatchPreviewAnalysis,
   type TeamSystemPayload,
@@ -15,6 +16,7 @@ import {
   type MatchScenarioSet,
   type MarketSignalsPayload,
 } from '../lib/api';
+import { formatScoreline } from '../lib/format';
 import { TeamSystemPanel } from '../components/team/TeamSystemPanel';
 import { ScenarioLikelihoodPanel } from '../components/scenarios/ScenarioLikelihoodPanel';
 import { ScenarioPredictionPanel } from '../components/scenarios/ScenarioPredictionPanel';
@@ -51,8 +53,11 @@ import { formatLocalizedVersus } from '../lib/i18n/stageLabels';
 import { MatchStickyScoreBar } from '../components/match/MatchStickyScoreBar';
 import { MatchSectionNav, type MatchSectionId } from '../components/match/MatchSectionNav';
 import { MatchLiveStatsPanel } from '../components/match/MatchLiveStatsPanel';
-import { MatchPredictionSummary } from '../components/match/MatchPredictionSummary';
 import { MatchAnalyticsPanel } from '../components/match/MatchAnalyticsPanel';
+import { MatchPredictionSummary } from '../components/match/MatchPredictionSummary';
+import { MatchRecapPanel } from '../components/match/MatchRecapPanel';
+import { MatchStaffPanel } from '../components/match/MatchStaffPanel';
+import { usePitchMapLive } from '../lib/usePitchMapLive';
 
 export function MatchPage() {
   const { matchId } = useParams();
@@ -64,6 +69,8 @@ export function MatchPage() {
   const [analysisLoading, setAnalysisLoading] = useState(true);
   const [history, setHistory] = useState<HistoryMatch[]>([]);
   const [h2hSummary, setH2hSummary] = useState<H2HSummary | null>(null);
+  const [homeRecentWc, setHomeRecentWc] = useState<TeamRecentWcMatch[]>([]);
+  const [awayRecentWc, setAwayRecentWc] = useState<TeamRecentWcMatch[]>([]);
   const [hints, setHints] = useState<ProbabilityHint[]>([]);
   const [preview, setPreview] = useState<MatchPreviewAnalysis | null>(null);
   const [previewLoading, setPreviewLoading] = useState(true);
@@ -88,6 +95,7 @@ export function MatchPage() {
   };
 
   const { match, prob, loadError } = useMatchLiveData(matchId);
+  const { data: pitchMap, loading: pitchLoading } = usePitchMapLive(matchId, match?.status === 'live');
   useLegacyMatchRedirect(matchId, match?.slug, matchPagePath);
   useMatchScenarioLive(matchId, setScenarioPredictions, !!matchId);
 
@@ -99,6 +107,8 @@ export function MatchPage() {
     api.matchHistory(matchId).then((r) => {
       setHistory(r.data.worldCupHistory ?? r.data.history);
       setH2hSummary(r.data.worldCupSummary ?? r.data.summary);
+      setHomeRecentWc(r.data.homeRecentWc ?? []);
+      setAwayRecentWc(r.data.awayRecentWc ?? []);
       setTeamNames({
         home: r.data.current?.home_name ?? resolveTeamDisplayName(r.data.current?.home_team_id),
         away: r.data.current?.away_name ?? resolveTeamDisplayName(r.data.current?.away_team_id),
@@ -325,7 +335,24 @@ export function MatchPage() {
       </section>
 
       <section ref={sectionRefs.overview} id="match-overview" className="scroll-mt-28 space-y-4 md:scroll-mt-20">
-        <MatchPredictionSummary prob={prob} homeLabel={home} awayLabel={away} hints={hints} />
+        {matchId && <MatchStaffPanel matchId={matchId} homeLabel={home} awayLabel={away} />}
+        <MatchPredictionSummary
+          prob={prob}
+          homeLabel={home}
+          awayLabel={away}
+          hints={hints}
+          homeScore={match.home_score}
+          awayScore={match.away_score}
+          status={match.status}
+        />
+        {match.status === 'completed' && matchId && (
+          <MatchRecapPanel
+            matchId={matchId}
+            homeTeamId={match.home_team_id}
+            homeLabel={home}
+            awayLabel={away}
+          />
+        )}
         <div className="space-y-2">
           <Link
             to={resolveMatchAnalysisHref({ id: match?.id ?? matchId!, slug: match?.slug ?? matchId })}
@@ -368,7 +395,16 @@ export function MatchPage() {
           />
         )}
         {prob?.scorelineDistribution && Object.keys(prob.scorelineDistribution).length > 0 && (
-          <ScorelineMatrix distribution={prob.scorelineDistribution} highlight={prob.mostLikelyScore} />
+          <ScorelineMatrix
+            distribution={prob.scorelineDistribution}
+            highlight={prob.mostLikelyScore}
+            actualScore={
+              match.status === 'completed' || match.status === 'live'
+                ? formatScoreline(match.home_score, match.away_score)
+                : undefined
+            }
+            actualLive={match.status === 'live'}
+          />
         )}
         {matchId && (
           <ProbabilityMovementPanel
@@ -412,9 +448,21 @@ export function MatchPage() {
 
       <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
         <div className="space-y-4">
-          <PitchMap events={events} homeLabel={home.slice(0, 3).toUpperCase()} awayLabel={away.slice(0, 3).toUpperCase()} />
+          <PitchMap
+            data={pitchMap}
+            loading={pitchLoading}
+            homeLabel={home.slice(0, 3).toUpperCase()}
+            awayLabel={away.slice(0, 3).toUpperCase()}
+          />
           {h2hSummary && (
-            <MatchHistoryPanel homeName={home} awayName={away} history={history} summary={h2hSummary} />
+            <MatchHistoryPanel
+              homeName={home}
+              awayName={away}
+              history={history}
+              summary={h2hSummary}
+              homeRecentWc={homeRecentWc}
+              awayRecentWc={awayRecentWc}
+            />
           )}
         </div>
 

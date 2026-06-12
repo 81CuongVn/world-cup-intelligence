@@ -10,6 +10,7 @@ import { FavoriteButton } from '../favorites/FavoriteButton';
 import { MatchTeamsWithFlags } from '../team/TeamNameWithFlag';
 import { CompactMatchProb } from './CompactMatchProb';
 import { MatchKickoffDisplay, ScheduleTimezoneBanner } from '../match/MatchKickoffDisplay';
+import { MatchResultScore, hasMatchResult } from '../match/MatchResultScore';
 import { formatKickoffDateLong, getViewerTimezone, localDateKey } from '../../lib/matchKickoffDisplay';
 
 type Props = {
@@ -148,12 +149,21 @@ export function TournamentSchedulePanel({
 
   function renderMatchMeta(m: ScheduleMatch) {
     return (
-      <p className="mt-1 text-xs text-muted">
+      <p className="mt-1 flex flex-wrap items-center gap-x-1 text-xs text-muted">
         <MatchKickoffDisplay kickoffUtc={m.kickoff_utc} showVnReference />
         {m.stage === 'Group' && m.group_code ? ` · ${t('calendar.groupLabel')} ${m.group_code}` : ''}
         {m.stage && m.stage !== 'Group' ? ` · ${matchStageLabel(m.stage, t)}` : ''}
-        {m.status === 'live' && ` · ${m.home_score}-${m.away_score}`}
-        {m.status === 'completed' && ` · ${m.home_score}-${m.away_score}`}
+        {hasMatchResult(m.status) && (
+          <>
+            <span aria-hidden> · </span>
+            <MatchResultScore
+              homeScore={m.home_score}
+              awayScore={m.away_score}
+              status={m.status}
+              variant={m.status === 'completed' || m.status === 'finished' ? 'badge' : 'compact'}
+            />
+          </>
+        )}
       </p>
     );
   }
@@ -339,15 +349,18 @@ export function TournamentSchedulePanel({
                               awayCountryCode={m.away_country_code}
                               separator={mode === 'en' ? ' vs ' : ' – '}
                             />
-                            {m.status === 'live' && (
-                              <span className="ml-2 text-xs font-semibold text-live">
-                                {m.home_score}-{m.away_score}
-                              </span>
-                            )}
-                            {m.status === 'completed' && (
-                              <span className="ml-2 font-mono-data text-xs text-muted">
-                                {m.home_score}-{m.away_score}
-                              </span>
+                            {hasMatchResult(m.status) && (
+                              <MatchResultScore
+                                homeScore={m.home_score}
+                                awayScore={m.away_score}
+                                status={m.status}
+                                variant={
+                                  m.status === 'completed' || m.status === 'finished'
+                                    ? 'badge'
+                                    : 'inline'
+                                }
+                                className="ml-2"
+                              />
                             )}
                           </span>
                           {m.stage === 'Group' && m.group_code && (

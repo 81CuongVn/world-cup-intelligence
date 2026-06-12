@@ -3,7 +3,7 @@ import * as matchesRepo from '../db/repositories/matchesRepo';
 import * as teamsRepo from '../db/repositories/teamsRepo';
 import * as probabilityRepo from '../db/repositories/probabilityRepo';
 import { getHeadToHead } from './matchHistory';
-import { getLineupDisplayForMatch, formatLineupPlayerLine, type LineupPlayerEntry } from './lineupDisplay';
+import { getLineupDisplayForMatch, ensureMatchLineups, type LineupUiSource } from './lineupDisplay';
 import { getGroupContextForMatch } from './matchGroupContext';
 import { recomputeMatchProbability } from './recomputeMatch';
 import { isGatewayConfigured, gatewayChatJson } from '../ai/gatewayClient';
@@ -29,11 +29,22 @@ const LINEUP_PENDING: LocalizedLine = {
 };
 
 function describeSideLineup(side: TeamPreviewSide, mode: 'vi' | 'en'): string {
-  if (!side.hasAccurateLineup) {
+  if (side.fullLineup.length < 7) {
     return mode === 'vi' ? LINEUP_PENDING.vi : LINEUP_PENDING.en;
   }
-  const src = mode === 'vi' ? 'chính thức' : 'official';
-  return `${side.teamName} (${side.formation}, ${src}): ${side.fullLineup.join('; ')}`;
+  const srcLabel =
+    side.lineupSource === 'official'
+      ? mode === 'vi'
+        ? 'chính thức'
+        : 'official'
+      : side.lineupSource === 'squad'
+        ? mode === 'vi'
+          ? 'danh sách đội'
+          : 'squad'
+        : mode === 'vi'
+          ? 'dự kiến'
+          : 'projected';
+  return `${side.teamName} (${side.formation}, ${srcLabel}): ${side.fullLineup.join('; ')}`;
 }
 
 export type TeamPreviewSide = {
@@ -44,9 +55,9 @@ export type TeamPreviewSide = {
   fifaRanking: number | null;
   collectiveStrength: number | null;
   formation: string | null;
-  lineupSource: 'official' | 'unknown';
+  lineupSource: LineupUiSource;
   hasAccurateLineup: boolean;
-  lineupPlayers: LineupPlayerEntry[];
+  lineupPlayers: { shirtNumber: number | null; name: string; position: string }[];
   keyPlayers: string[];
   fullLineup: string[];
   recentForm: string;
@@ -284,9 +295,11 @@ export async function buildMatchPreviewContext(env: AppEnv, matchId: string) {
   const h2h = await getHeadToHead(env, matchId);
   const groupCtx = await getGroupContextForMatch(env, matchId, match.group_code);
 
+  await ensureMatchLineups(env, matchId);
+
   const [homeDisplay, awayDisplay] = await Promise.all([
-    getLineupDisplayForMatch(env, matchId, home.id),
-    getLineupDisplayForMatch(env, matchId, away.id),
+    getLineupDisplayForMatch(env, matchId, home.id, home.name),
+    getLineupDisplayForMatch(env, matchId, away.id, away.name),
   ]);
 
   const homeSide: TeamPreviewSide = {
@@ -297,10 +310,10 @@ export async function buildMatchPreviewContext(env: AppEnv, matchId: string) {
     fifaRanking: home.fifa_ranking,
     collectiveStrength: home.collective_strength_rating,
     formation: homeDisplay.formation,
-    lineupSource: homeDisplay.hasAccurateLineup ? 'official' : 'unknown',
+    lineupSource: homeDisplay.source,
     hasAccurateLineup: homeDisplay.hasAccurateLineup,
     lineupPlayers: homeDisplay.players,
-    keyPlayers: homeDisplay.players.slice(0, 5).map(formatLineupPlayerLine),
+    keyPlayers: homeDisplay.displayLines.slice(0, 5),
     fullLineup: homeDisplay.displayLines,
     recentForm: h2h?.summary.recentFormHome ?? '—',
     formMatches: h2h?.summary.totalMatches ?? 0,
@@ -314,10 +327,10 @@ export async function buildMatchPreviewContext(env: AppEnv, matchId: string) {
     fifaRanking: away.fifa_ranking,
     collectiveStrength: away.collective_strength_rating,
     formation: awayDisplay.formation,
-    lineupSource: awayDisplay.hasAccurateLineup ? 'official' : 'unknown',
+    lineupSource: awayDisplay.source,
     hasAccurateLineup: awayDisplay.hasAccurateLineup,
     lineupPlayers: awayDisplay.players,
-    keyPlayers: awayDisplay.players.slice(0, 5).map(formatLineupPlayerLine),
+    keyPlayers: awayDisplay.displayLines.slice(0, 5),
     fullLineup: awayDisplay.displayLines,
     recentForm: h2h?.summary.recentFormAway ?? '—',
     formMatches: h2h?.summary.totalMatches ?? 0,

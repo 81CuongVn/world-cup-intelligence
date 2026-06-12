@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type MatchSummary, type ProbabilityData } from './api';
 
-const REFRESH_MS = 30_000;
-const LIVE_REFRESH_MS = 15_000;
+const LIVE_REFRESH_MS = 10_000;
+const STATS_LIVE_REFRESH_MS = 15_000;
 
 /** Polls match status/scores and model probabilities for live UI updates. */
 export function useMatchLiveData(matchId: string | undefined) {
@@ -38,7 +38,7 @@ export function useMatchLiveData(matchId: string | undefined) {
 
   useEffect(() => {
     if (!matchId) return;
-    const ms = match?.status === 'live' ? LIVE_REFRESH_MS : REFRESH_MS;
+    const ms = match?.status === 'live' ? LIVE_REFRESH_MS : 30_000;
     const timer = setInterval(refresh, ms);
     return () => clearInterval(timer);
   }, [matchId, match?.status, refresh]);

@@ -10,3 +10,12 @@ export function pctCompact(n: number): string {
 export function xg(n: number): string {
   return n.toFixed(2);
 }
+
+/** Canonical scoreline key for model matrix lookup (e.g. 2-0). */
+export function formatScoreline(home: number, away: number): string {
+  return `${home}-${away}`;
+}
+
+export function normalizeScorelineKey(score: string): string {
+  return score.replace(/[–—]/g, '-').trim();
+}

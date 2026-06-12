@@ -9,6 +9,7 @@ import {
   ingestMatchMarkets,
 } from '../market/services/marketIngestionService';
 import { recomputeMatchProbability, recomputeAllWc2026Matches } from '../services/recomputeMatch';
+import { crawlWorldCupNews } from '../ingestion/newsCrawler';
 import {
   applyOfficialLineupToMatch,
   syncOfficialLineupsToMatches,
@@ -239,7 +240,8 @@ adminRoutes.post('/matches/:matchId/lineup', async (c) => {
 });
 
 adminRoutes.post('/lineups/sync-squads', async (c) => {
-  const data = await syncOfficialLineupsToMatches(c.env, { recompute: true });
+  const all = c.req.query('all') === 'true';
+  const data = await syncOfficialLineupsToMatches(c.env, { recompute: true, allScheduled: all });
   return c.json({ data });
 });
 
@@ -252,4 +254,9 @@ adminRoutes.patch('/sources/:sourceId', async (c) => {
       .run();
   }
   return c.json({ status: 'updated' });
+});
+
+adminRoutes.post('/crawl-news', async (c) => {
+  const inserted = await crawlWorldCupNews(c.env);
+  return c.json({ status: 'ok', inserted });
 });

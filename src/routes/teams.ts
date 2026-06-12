@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../env';
 import * as teamsRepo from '../db/repositories/teamsRepo';
 import { getTeamWorldCupHeadToHead } from '../services/matchHistory';
+import { getTeamCoachProfile } from '../services/matchStaff';
 import { WC2026_TOURNAMENT_ID } from '../constants/tournament';
 
 export const teamRoutes = new Hono<{ Bindings: AppEnv }>();
@@ -14,7 +15,21 @@ teamRoutes.get('/', async (c) => {
 teamRoutes.get('/:teamId', async (c) => {
   const team = await teamsRepo.getTeam(c.env.DB, c.req.param('teamId'));
   if (!team) return c.json({ error: 'Not found' }, 404);
-  return c.json({ data: team });
+  const coach = await getTeamCoachProfile(c.env, team.id, WC2026_TOURNAMENT_ID);
+  return c.json({
+    data: {
+      ...team,
+      coach: coach
+        ? {
+            id: coach.coachId,
+            name: coach.name,
+            nationality: coach.nationality,
+            wcAppearances: coach.wcAppearances,
+            tenureYears: coach.tenureYears,
+          }
+        : null,
+    },
+  });
 });
 
 teamRoutes.get('/:teamId/squad', async (c) => {

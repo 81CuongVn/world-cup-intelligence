@@ -6,12 +6,13 @@ import { nowIso } from '../utils/time';
 /** Recompute collective_strength_rating from recent completed-match form. */
 export async function refreshTeamRatingsFromForm(env: AppEnv): Promise<number> {
   const { results: teams } = await env.DB.prepare(
-    `SELECT id FROM teams WHERE collective_strength_rating IS NOT NULL AND id NOT LIKE 'team-w26-%'`,
+    `SELECT id FROM teams WHERE collective_strength_rating IS NOT NULL`,
   ).all<{ id: string }>();
 
   let updated = 0;
   for (const t of teams ?? []) {
-    const form = await getTeamFormSnapshot(env.DB, t.id, 8);
+    const tournamentId = t.id.startsWith('team-w26-') ? 't-2026' : undefined;
+    const form = await getTeamFormSnapshot(env.DB, t.id, 8, tournamentId);
     if (!form || form.matchesPlayed < 2) continue;
 
     const attack = Math.min(0.98, 0.45 + form.xgForPerGame * 0.22 + form.recentForm * 0.25);

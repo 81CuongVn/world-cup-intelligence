@@ -2,15 +2,28 @@ import type { ProbabilityData, ProbabilityHint } from '../../lib/api';
 import { useI18n } from '../../lib/i18n/I18nContext';
 import { pct, xg } from '../../lib/format';
 import { SectionLabel } from '../tactical/SectionLabel';
+import { PredictedActualScores } from './PredictedActualScores';
+import { DataKindLegend, DataKindMark } from '../ui/DataKindBadge';
 
 type Props = {
   prob: ProbabilityData | null;
   homeLabel: string;
   awayLabel: string;
   hints?: ProbabilityHint[];
+  homeScore?: number;
+  awayScore?: number;
+  status?: string;
 };
 
-export function MatchPredictionSummary({ prob, homeLabel, awayLabel, hints = [] }: Props) {
+export function MatchPredictionSummary({
+  prob,
+  homeLabel,
+  awayLabel,
+  hints = [],
+  homeScore,
+  awayScore,
+  status,
+}: Props) {
   const { t, mode } = useI18n();
 
   if (!prob) {
@@ -34,19 +47,33 @@ export function MatchPredictionSummary({ prob, homeLabel, awayLabel, hints = [] 
 
   return (
     <section className="panel-dense border-cyan/15">
-      <SectionLabel title={t('prediction.summaryTitle')} subtitle={t('prediction.summarySubtitle')} accent="cyan" />
+      <SectionLabel
+        title={t('prediction.summaryTitle')}
+        subtitle={t('prediction.summarySubtitle')}
+        accent="cyan"
+        dataKind="predicted"
+      />
+      <DataKindLegend className="mb-3" />
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-border/50 bg-panel2/30 p-3">
-          <p className="text-xs text-muted">{t('prediction.predictedScore')}</p>
-          <p className="mt-1 font-display text-2xl text-yellow">
-            {prob.mostLikelyScore ?? '—'}
-          </p>
+          <PredictedActualScores
+            predicted={prob.mostLikelyScore}
+            homeScore={homeScore}
+            awayScore={awayScore}
+            status={status}
+          />
           {topScores.length > 0 && (
             <ul className="mt-2 space-y-1 text-xs text-muted">
               {topScores.map((s) => (
                 <li key={s.score} className="flex justify-between font-mono-data">
-                  <span>{s.score}</span>
-                  <span>{pct(s.prob)}</span>
+                  <span>
+                    <DataKindMark />
+                    {s.score}
+                  </span>
+                  <span>
+                    <DataKindMark />
+                    {pct(s.prob)}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -55,17 +82,27 @@ export function MatchPredictionSummary({ prob, homeLabel, awayLabel, hints = [] 
         <div className="space-y-2 rounded-lg border border-border/50 bg-panel2/30 p-3 text-sm">
           <div className="flex justify-between">
             <span className="text-muted">{t('prediction.homeWin')}</span>
-            <span className="font-mono-data text-cyan">{pct(prob.homeWinProb)}</span>
+            <span className="font-mono-data text-cyan">
+              <DataKindMark />
+              {pct(prob.homeWinProb)}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted">{t('prediction.draw')}</span>
-            <span className="font-mono-data">{pct(prob.drawProb)}</span>
+            <span className="font-mono-data">
+              <DataKindMark />
+              {pct(prob.drawProb)}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted">{t('prediction.awayWin')}</span>
-            <span className="font-mono-data text-magenta">{pct(prob.awayWinProb)}</span>
+            <span className="font-mono-data text-magenta">
+              <DataKindMark />
+              {pct(prob.awayWinProb)}
+            </span>
           </div>
           <div className="border-t border-border/40 pt-2 text-xs text-muted">
+            <DataKindMark />
             xG {homeLabel}: {xg(prob.expectedHomeGoals)} · {awayLabel}: {xg(prob.expectedAwayGoals)}
           </div>
           <p className="text-[11px] text-muted">{t('prediction.xgNote')}</p>
@@ -74,7 +111,11 @@ export function MatchPredictionSummary({ prob, homeLabel, awayLabel, hints = [] 
       <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted">
         {prob.confidence != null && (
           <span>
-            {t('prediction.modelConfidence')}: <strong className="text-cyan">{pct(prob.confidence)}</strong>
+            {t('prediction.modelConfidence')}:{' '}
+            <strong className="text-cyan">
+              <DataKindMark />
+              {pct(prob.confidence)}
+            </strong>
           </span>
         )}
         {prob.modelVersion && (

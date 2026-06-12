@@ -9,6 +9,7 @@ import {
 } from './matchLifecycle';
 import { logInfo } from '../utils/logger';
 import { nowIso } from '../utils/time';
+import { refreshTeamRatingsFromForm } from './teamRatingRefresh';
 
 const GROUP_CODES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const;
 
@@ -269,6 +270,7 @@ export async function processMatchCompletion(env: AppEnv, matchId: string): Prom
     koTargets.forEach((id) => affected.add(id));
   }
 
+  await refreshTeamRatingsFromForm(env);
   await scheduleRecomputeAfterDataChange(env, `match-complete:${matchId}`, { queue: true });
   logInfo('match completion processed', {
     match_id: matchId,

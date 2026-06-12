@@ -25,6 +25,8 @@ Chỉ cho phép `sycu.lee@gmail.com`:
 
 ## Lệnh thường dùng
 
+**Deploy auth:** tạo file `cf-deploy.token` (gitignored) với Cloudflare API token — không đặt trong `.env` / `.dev.vars`.
+
 ```bash
 npm run typecheck
 npm run test

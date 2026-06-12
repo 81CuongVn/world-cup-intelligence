@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   groupTeamWorldCupMeetings,
+  mapMatchesToTeamPerspective,
   summarizePairFromPerspective,
   type HeadToHeadMatch,
 } from '../src/services/matchHistory';
@@ -63,5 +64,43 @@ describe('groupTeamWorldCupMeetings', () => {
     expect(fra?.draws).toBe(1);
     const mex = grouped.find((g) => g.opponentId === 'team-mex');
     expect(mex?.wins).toBe(1);
+  });
+});
+
+describe('mapMatchesToTeamPerspective', () => {
+  it('maps scores and result from team perspective with alias ids', () => {
+    const meetings = [
+      {
+        ...meeting('1', 'team-mex', 'team-bra', 0, 2, 2018),
+        home_name: 'Mexico',
+        away_name: 'Brazil',
+        home_short: 'MEX',
+        away_short: 'BRA',
+      },
+      {
+        ...meeting('2', 'team-fra', 'team-mex', 0, 2, 2010),
+        home_name: 'France',
+        away_name: 'Mexico',
+        home_short: 'FRA',
+        away_short: 'MEX',
+      },
+    ];
+    const aliasIds = new Set(['team-w26-a1', 'team-mex']);
+    const mapped = mapMatchesToTeamPerspective(aliasIds, meetings);
+    expect(mapped).toHaveLength(2);
+    expect(mapped[0]).toMatchObject({
+      opponentName: 'Brazil',
+      teamScore: 0,
+      opponentScore: 2,
+      result: 'L',
+      isHome: true,
+    });
+    expect(mapped[1]).toMatchObject({
+      opponentName: 'France',
+      teamScore: 2,
+      opponentScore: 0,
+      result: 'W',
+      isHome: false,
+    });
   });
 });

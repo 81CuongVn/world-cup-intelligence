@@ -5,6 +5,7 @@ import { resolveMatchHref } from '../../lib/matchPaths';
 import { Bilingual } from '../i18n/Bilingual';
 import { useI18n } from '../../lib/i18n/I18nContext';
 import { formatLocalizedVersus, matchStageLabel } from '../../lib/i18n/stageLabels';
+import { MatchResultScore, hasMatchResult } from '../match/MatchResultScore';
 
 type Props = {
   byDate: Record<string, ScheduleMatch[]>;
@@ -137,15 +138,26 @@ export function MatchScheduleCalendar({ byDate, matches, totalExpected = 104 }: 
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-muted">
+                      <p className="mt-1 flex flex-wrap items-center gap-x-1 text-xs text-muted">
                         {new Date(m.kickoff_utc).toLocaleTimeString(locale, {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
                         {m.stage === 'Group' && m.group_code ? ` · ${t('calendar.groupLabel')} ${m.group_code}` : ''}
                         {m.stage && m.stage !== 'Group' ? ` · ${matchStageLabel(m.stage, t)}` : ''}
-                        {m.status === 'live' && ` · ${m.home_score}-${m.away_score}`}
-                        {m.status === 'completed' && ` · ${m.home_score}-${m.away_score}`}
+                        {hasMatchResult(m.status) && (
+                          <>
+                            <span aria-hidden> · </span>
+                            <MatchResultScore
+                              homeScore={m.home_score}
+                              awayScore={m.away_score}
+                              status={m.status}
+                              variant={
+                                m.status === 'completed' || m.status === 'finished' ? 'badge' : 'compact'
+                              }
+                            />
+                          </>
+                        )}
                       </p>
                     </Link>
                   </li>

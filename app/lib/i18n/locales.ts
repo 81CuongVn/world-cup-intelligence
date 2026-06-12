@@ -54,6 +54,8 @@ export type LocaleKey =
   | 'news.translatingBody'
   | 'news.translationFallback'
   | 'news.notFound'
+  | 'news.impactAnalysis'
+  | 'news.viewAffectedMatch'
   | 'news.articleLangLabel'
   | 'home.title'
   | 'home.subtitle'
@@ -113,12 +115,19 @@ export type LocaleKey =
   | 'footer.github'
   | 'common.home'
   | 'common.draw'
+  | 'common.win'
+  | 'common.loss'
   | 'common.away'
   | 'common.abbrHome'
   | 'common.abbrDraw'
   | 'common.abbrAway'
   | 'common.tbd'
   | 'common.model'
+  | 'dataKind.predicted'
+  | 'dataKind.actual'
+  | 'dataKind.simulated'
+  | 'dataKind.legend'
+  | 'dataKind.legendHint'
   | 'common.market'
   | 'common.consensus'
   | 'common.delta'
@@ -238,6 +247,13 @@ export type LocaleKey =
   | 'matchAnalysis.groupTitle'
   | 'matchAnalysis.stageTitle'
   | 'lineups.apiError'
+  | 'lineups.substitutes'
+  | 'lineups.groupGK'
+  | 'lineups.groupDEF'
+  | 'lineups.groupMID'
+  | 'lineups.groupFWD'
+  | 'lineups.viewFull'
+  | 'lineups.detailHint'
   | 'matchAnalysis.back'
   | 'matchAnalysis.title'
   | 'matchAnalysis.subtitle'
@@ -245,6 +261,11 @@ export type LocaleKey =
   | 'matchAnalysis.marketNote'
   | 'pitch.title'
   | 'pitch.subtitle'
+  | 'pitch.subtitleLineup'
+  | 'pitch.loading'
+  | 'pitch.unavailable'
+  | 'pitch.minute'
+  | 'pitch.ratingsNote'
   | 'pitch.home'
   | 'pitch.away'
   | 'simulator.title'
@@ -361,6 +382,11 @@ export type LocaleKey =
   | 'match.wcHistory'
   | 'match.wcHistoryHint'
   | 'match.wcHistoryEmpty'
+  | 'match.recentWcTitle'
+  | 'match.recentWcHint'
+  | 'match.recentWcEmpty'
+  | 'match.recentWcHome'
+  | 'match.recentWcAway'
   | 'team.wcH2hTitle'
   | 'team.wcH2hSubtitle'
   | 'team.wcH2hEmpty'
@@ -386,6 +412,26 @@ export type LocaleKey =
   | 'stats.subtitleLive'
   | 'stats.loading'
   | 'stats.unavailable'
+  | 'stats.officialSource'
+  | 'recap.title'
+  | 'recap.subtitle'
+  | 'recap.loading'
+  | 'recap.commentary'
+  | 'recap.playerStats'
+  | 'recap.sourceFifa'
+  | 'staff.title'
+  | 'staff.subtitle'
+  | 'staff.loading'
+  | 'staff.referee'
+  | 'staff.assistants'
+  | 'staff.nationality'
+  | 'staff.wcApps'
+  | 'staff.tenure'
+  | 'staff.years'
+  | 'staff.strictness'
+  | 'staff.modelNote'
+  | 'staff.role.fourth_official'
+  | 'staff.role.var'
   | 'stats.possession'
   | 'stats.shots'
   | 'stats.shotsOnTarget'
@@ -398,6 +444,10 @@ export type LocaleKey =
   | 'prediction.summarySubtitle'
   | 'prediction.loading'
   | 'prediction.predictedScore'
+  | 'prediction.actualScore'
+  | 'prediction.liveScore'
+  | 'prediction.scoreMatch'
+  | 'prediction.scoreDiff'
   | 'prediction.homeWin'
   | 'prediction.draw'
   | 'prediction.awayWin'
@@ -514,6 +564,8 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
     en: 'Auto-translation unavailable — showing English. Open the source link below for the original.',
   },
   'news.notFound': { vi: 'Không tìm thấy bài viết.', en: 'Article not found.' },
+  'news.impactAnalysis': { vi: 'Phân tích tác động tới trận đấu', en: 'Match impact analysis' },
+  'news.viewAffectedMatch': { vi: 'Xem trận', en: 'View match' },
   'news.articleLangLabel': { vi: 'Ngôn ngữ bài viết', en: 'Article language' },
   'home.title': { vi: 'Trung tâm Chiến thuật World Cup', en: 'World Cup Tactical Command' },
   'home.subtitle': {
@@ -563,6 +615,20 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
     vi: 'Hai đội chưa từng gặp nhau tại World Cup trước 2026.',
     en: 'These teams have not met at a World Cup before 2026.',
   },
+  'match.recentWcTitle': {
+    vi: '5 trận World Cup gần nhất',
+    en: 'Last 5 World Cup matches',
+  },
+  'match.recentWcHint': {
+    vi: 'Kết quả gần nhất của từng đội với các đối thủ khác tại các kỳ World Cup trước 2026.',
+    en: 'Each team’s five most recent World Cup results against other opponents before 2026.',
+  },
+  'match.recentWcEmpty': {
+    vi: 'Chưa có dữ liệu World Cup trước 2026.',
+    en: 'No World Cup history before 2026.',
+  },
+  'match.recentWcHome': { vi: 'vs', en: 'vs' },
+  'match.recentWcAway': { vi: '@', en: '@' },
   'match.hints': { vi: 'Gợi ý xác suất', en: 'Probability hints' },
   'match.hintsNote': {
     vi: 'Số liệu từ mô hình thống kê — chỉ để phân tích, không phải hướng dẫn đặt cược.',
@@ -601,6 +667,16 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
   'lineups.back': { vi: '← Về trận đấu', en: '← Back to match' },
   'lineups.loading': { vi: 'Đang tải đội hình…', en: 'Loading lineups…' },
   'lineups.apiError': { vi: 'Lỗi tải dữ liệu', en: 'Failed to load data' },
+  'lineups.substitutes': { vi: 'Dự bị', en: 'Substitutes' },
+  'lineups.groupGK': { vi: 'Thủ môn', en: 'Goalkeepers' },
+  'lineups.groupDEF': { vi: 'Hậu vệ', en: 'Defenders' },
+  'lineups.groupMID': { vi: 'Tiền vệ', en: 'Midfielders' },
+  'lineups.groupFWD': { vi: 'Tiền đạo', en: 'Forwards' },
+  'lineups.viewFull': { vi: 'Xem đội hình đầy đủ', en: 'Full lineup page' },
+  'lineups.detailHint': {
+    vi: 'Ra sân theo vị trí · nguồn: chính thức / danh sách đội / dự kiến',
+    en: 'Grouped by position · source: official / squad / projected',
+  },
   'match.previewForm': { vi: 'Phong độ', en: 'Form' },
   'match.previewContext': { vi: 'Bối cảnh giải', en: 'Tournament context' },
   'match.previewTactical': { vi: 'Góc chiến thuật', en: 'Tactical angle' },
@@ -625,12 +701,25 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
   'footer.github': { vi: 'GitHub', en: 'GitHub' },
   'common.home': { vi: 'Chủ nhà', en: 'Home' },
   'common.draw': { vi: 'Hòa', en: 'Draw' },
+  'common.win': { vi: 'Thắng', en: 'Win' },
+  'common.loss': { vi: 'Thua', en: 'Loss' },
   'common.away': { vi: 'Khách', en: 'Away' },
   'common.abbrHome': { vi: 'C', en: 'H' },
   'common.abbrDraw': { vi: 'H', en: 'D' },
   'common.abbrAway': { vi: 'K', en: 'A' },
   'common.tbd': { vi: 'Chưa xác định', en: 'TBD' },
   'common.model': { vi: 'Mô hình', en: 'Model' },
+  'dataKind.predicted': { vi: 'Dự đoán', en: 'Forecast' },
+  'dataKind.actual': { vi: 'Thực tế', en: 'Actual' },
+  'dataKind.simulated': { vi: 'Giả lập', en: 'Simulated' },
+  'dataKind.legend': {
+    vi: 'Dự đoán · ● Thực tế · ≈ Giả lập',
+    en: 'Forecast · ● Actual · ≈ Simulated',
+  },
+  'dataKind.legendHint': {
+    vi: 'Ký hiệu phân biệt số liệu mô hình/dự đoán với dữ liệu trận đấu thực tế.',
+    en: 'Symbols distinguish model forecasts from official match data.',
+  },
   'common.market': { vi: 'Thị trường', en: 'Market' },
   'common.consensus': { vi: 'Đồng thuận', en: 'Consensus' },
   'common.delta': { vi: 'Chênh', en: 'Δ' },
@@ -858,6 +947,20 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
   },
   'pitch.title': { vi: 'Sơ đồ sân', en: 'Pitch map' },
   'pitch.subtitle': { vi: 'Vị trí sự kiện & vector di chuyển', en: 'Event locations & movement vectors' },
+  'pitch.subtitleLineup': {
+    vi: 'Đội hình thực tế theo sơ đồ chiến thuật · cập nhật khi trận LIVE',
+    en: 'Live tactical formation · updates during LIVE matches',
+  },
+  'pitch.loading': { vi: 'Đang tải sơ đồ sân…', en: 'Loading pitch map…' },
+  'pitch.unavailable': {
+    vi: 'Chưa có đội hình chính thức cho trận này.',
+    en: 'No official lineup available for this match yet.',
+  },
+  'pitch.minute': { vi: 'Phút', en: 'Min' },
+  'pitch.ratingsNote': {
+    vi: 'Điểm cầu thủ (4–10) tổng hợp từ thống kê trận sau hiệp một — không phải xếp hạng Opta/FIFA chính thức.',
+    en: 'Player ratings (4–10) aggregated from match stats after half-time — not official Opta/FIFA scores.',
+  },
   'pitch.home': { vi: 'CHỦ', en: 'HOME' },
   'pitch.away': { vi: 'KHÁCH', en: 'AWAY' },
   'simulator.title': { vi: 'Mô phỏng phân tích', en: 'Analyst simulator' },
@@ -955,8 +1058,8 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
   },
   'groupBoard.loading': { vi: 'Đang tải bảng đấu…', en: 'Loading groups…' },
   'groupBoard.probHint': {
-    vi: 'C · H · K = đã phân tích · «Chưa có» = đang chờ engine',
-    en: 'H · D · A = analyzed · «Pending» = awaiting engine',
+    vi: 'C · H · K = xác suất dự đoán mô hình · «Chưa có» = đang chờ engine',
+    en: 'H · D · A = model forecast · «Pending» = awaiting engine',
   },
   'compactProb.noAnalysis': { vi: 'Chưa có', en: 'Pending' },
   'compactProb.noAnalysisTitle': {
@@ -1083,6 +1186,38 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
     vi: 'Chưa có thống kê chính thức cho trận này. PitchIntel sẽ cập nhật khi có dữ liệu.',
     en: 'No official stats for this match yet. PitchIntel will update when data is available.',
   },
+  'stats.officialSource': { vi: 'Nguồn', en: 'Source' },
+  'recap.title': { vi: 'Tóm tắt trận đấu', en: 'Match summary' },
+  'recap.subtitle': {
+    vi: 'Kết quả và diễn biến chính thức (FIFA Match Centre)',
+    en: 'Official result and key moments (FIFA Match Centre)',
+  },
+  'recap.loading': { vi: 'Đang tải tóm tắt…', en: 'Loading match summary…' },
+  'recap.commentary': { vi: 'Tường thuật', en: 'Commentary' },
+  'recap.playerStats': { vi: 'Số liệu cầu thủ', en: 'Player statistics' },
+  'recap.sourceFifa': {
+    vi: 'Nguồn: FIFA Match Centre · tham chiếu Opta/FotMob',
+    en: 'Source: FIFA Match Centre · Opta/FotMob reference',
+  },
+  'staff.title': { vi: 'Ban huấn luyện & trọng tài', en: 'Coaching staff & officials' },
+  'staff.subtitle': {
+    vi: 'HLV trưởng và trọng tài chính thức — dùng trong mô hình xác suất wc-prob-v4.',
+    en: 'Head coaches and appointed officials — inputs to the wc-prob-v4 probability model.',
+  },
+  'staff.loading': { vi: 'Đang tải thông tin ban huấn luyện…', en: 'Loading staff data…' },
+  'staff.referee': { vi: 'Trọng tài chính', en: 'Referee' },
+  'staff.assistants': { vi: 'Trợ lý', en: 'Assistant referees' },
+  'staff.nationality': { vi: 'Quốc tịch', en: 'Nationality' },
+  'staff.wcApps': { vi: 'Số lần dự World Cup (HLV)', en: 'WC apps (as coach)' },
+  'staff.tenure': { vi: 'Thâm niên', en: 'Tenure' },
+  'staff.years': { vi: 'năm', en: 'yrs' },
+  'staff.strictness': { vi: 'Mức thẻ', en: 'Card strictness' },
+  'staff.modelNote': {
+    vi: 'Kinh nghiệm HLV và profile trọng tài được tích hợp vào λ Poisson (PitchIntel).',
+    en: 'Coach experience and referee profile adjust Poisson λ in the PitchIntel model.',
+  },
+  'staff.role.fourth_official': { vi: 'Trọng tài thứ 4', en: 'Fourth official' },
+  'staff.role.var': { vi: 'VAR', en: 'VAR' },
   'stats.possession': { vi: 'Kiểm soát bóng', en: 'Possession' },
   'stats.shots': { vi: 'Cú sút', en: 'Shots' },
   'stats.shotsOnTarget': { vi: 'Sút trúng đích', en: 'Shots on target' },
@@ -1098,6 +1233,10 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
   },
   'prediction.loading': { vi: 'Đang tải dự đoán…', en: 'Loading prediction…' },
   'prediction.predictedScore': { vi: 'Tỉ số dự đoán', en: 'Predicted score' },
+  'prediction.actualScore': { vi: 'Tỉ số thực tế', en: 'Actual score' },
+  'prediction.liveScore': { vi: 'Tỉ số hiện tại', en: 'Current score' },
+  'prediction.scoreMatch': { vi: 'Trùng dự đoán', en: 'Matched prediction' },
+  'prediction.scoreDiff': { vi: 'Khác dự đoán', en: 'Differs from prediction' },
   'prediction.homeWin': { vi: 'Xác suất đội nhà thắng', en: 'Home win probability' },
   'prediction.draw': { vi: 'Xác suất hòa', en: 'Draw probability' },
   'prediction.awayWin': { vi: 'Xác suất đội khách thắng', en: 'Away win probability' },

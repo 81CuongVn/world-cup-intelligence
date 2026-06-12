@@ -9,6 +9,7 @@ import { ScenarioComparisonCard } from './ScenarioComparisonCard';
 import { ScenarioRealtimeTimeline } from './ScenarioRealtimeTimeline';
 import { useI18n } from '../../lib/i18n/I18nContext';
 import { localizeScenarioSet } from '../../lib/i18n/scenarioPredictionLabels';
+import { DataKindBadge, DataKindMark, DataKindLegend } from '../ui/DataKindBadge';
 
 function ScenarioCard({
   scenario,
@@ -41,12 +42,17 @@ function ScenarioCard({
           value={scenario.scenarioProbability}
         />
         <p className="font-mono-data text-sm text-foreground">
-          {homeLabel} {pct(scenario.homeWinProb)} · {t('common.draw')} {pct(scenario.drawProb)} ·{' '}
-          {awayLabel} {pct(scenario.awayWinProb)}
+          {homeLabel} <DataKindMark />
+          {pct(scenario.homeWinProb)} · {t('common.draw')} <DataKindMark />
+          {pct(scenario.drawProb)} · {awayLabel} <DataKindMark />
+          {pct(scenario.awayWinProb)}
         </p>
         <p className="text-sm text-muted">
           {t('scenario.mostLikelyScore')}:{' '}
-          <span className="font-mono-data text-yellow">{scenario.mostLikelyScore}</span>
+          <span className="font-mono-data text-yellow">
+            <DataKindMark />
+            {scenario.mostLikelyScore}
+          </span>
         </p>
       </div>
 
@@ -91,8 +97,12 @@ export function ScenarioPredictionPanel({ data, loading, homeName = '', awayName
   return (
     <section className="panel-elevated space-y-5 border-magenta/20">
       <div>
-        <h2 className="label-tactical text-magenta">{t('scenario.predictionTitle')}</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="label-tactical text-magenta">{t('scenario.predictionTitle')}</h2>
+          <DataKindBadge kind="predicted" compact />
+        </div>
         <p className="mt-1 text-xs text-muted">{t('scenario.predictionSubtitle')}</p>
+        <DataKindLegend className="mt-2" />
         <ScenarioRealtimeTimeline updatedAt={localized.updatedAt} />
       </div>
 

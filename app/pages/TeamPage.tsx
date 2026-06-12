@@ -83,7 +83,13 @@ export function TeamPage() {
           <dt className="text-muted">{t('team.elo')}</dt>
           <dd>{team.elo_rating?.toFixed(0) ?? '—'}</dd>
           <dt className="text-muted">{t('team.coach')}</dt>
-          <dd>{t('team.coachPending')}</dd>
+          <dd>{team.coach?.name ?? t('team.coachPending')}</dd>
+          {team.coach && (
+            <>
+              <dt className="text-muted">{t('staff.wcApps')}</dt>
+              <dd>{team.coach.wcAppearances}</dd>
+            </>
+          )}
         </dl>
       </header>
 

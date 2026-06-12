@@ -1,6 +1,7 @@
 export type AppEnv = {
   ENVIRONMENT: string;
   MOCK_SOURCES: string;
+  FIFA_LIVE_ENABLED?: string;
   AI_FALLBACK_MODE: string;
   VECTORIZE_FALLBACK_MODE: string;
   AI_GATEWAY_ENABLED?: string;
@@ -27,6 +28,7 @@ export function parseEnv(env: AppEnv) {
   return {
     environment: env.ENVIRONMENT ?? 'development',
     mockSources: env.MOCK_SOURCES === 'true',
+    fifaLiveEnabled: env.FIFA_LIVE_ENABLED === 'true',
     aiFallback: env.AI_FALLBACK_MODE !== 'false',
     vectorizeFallback: env.VECTORIZE_FALLBACK_MODE !== 'false',
     aiGatewayEnabled: env.AI_GATEWAY_ENABLED === 'true',

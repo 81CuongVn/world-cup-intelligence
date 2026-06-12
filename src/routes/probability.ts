@@ -82,7 +82,11 @@ function enrichProbabilityPayload(
   };
 }
 
-async function resolveProbability(c: { env: AppEnv }, ref: string, recompute = false) {
+async function resolveProbability(
+  c: { env: AppEnv; req?: { query: (k: string) => string | undefined } },
+  ref: string,
+  recompute = false,
+) {
   const resolved = await resolveMatchRef(c.env.DB, ref);
   if (!resolved) return null;
   const match = resolved;
@@ -125,20 +129,23 @@ async function resolveProbability(c: { env: AppEnv }, ref: string, recompute = f
 }
 
 probabilityRoutes.get('/:matchId/probability', async (c) => {
-  const resolved = await resolveProbability(c, c.req.param('matchId'));
+  const recompute = c.req.query('recompute') === '1';
+  const resolved = await resolveProbability(c, c.req.param('matchId'), recompute);
   if (!resolved) return c.json({ error: 'Not found' }, 404);
   return c.json({ data: enrichProbabilityPayload(resolved.data as Record<string, unknown>) });
 });
 
 probabilityRoutes.get('/:matchId/scoreline', async (c) => {
-  const resolved = await resolveProbability(c, c.req.param('matchId'));
+  const recompute = c.req.query('recompute') === '1';
+  const resolved = await resolveProbability(c, c.req.param('matchId'), recompute);
   if (!resolved) return c.json({ error: 'Not found' }, 404);
   const dist = 'scorelineDistribution' in resolved.data ? resolved.data.scorelineDistribution : resolved.data;
   return c.json({ data: dist });
 });
 
 probabilityRoutes.get('/:matchId/intervals', async (c) => {
-  const resolved = await resolveProbability(c, c.req.param('matchId'));
+  const recompute = c.req.query('recompute') === '1';
+  const resolved = await resolveProbability(c, c.req.param('matchId'), recompute);
   if (!resolved) return c.json({ error: 'Not found' }, 404);
   const intervals =
     'intervalDistribution' in resolved.data ? resolved.data.intervalDistribution : resolved.data;
@@ -147,7 +154,8 @@ probabilityRoutes.get('/:matchId/intervals', async (c) => {
 
 probabilityRoutes.get('/:matchId/tactical-briefing', async (c) => {
   const matchId = c.req.param('matchId');
-  const resolved = await resolveProbability(c, matchId);
+  const recompute = c.req.query('recompute') === '1';
+  const resolved = await resolveProbability(c, matchId, recompute);
   if (!resolved) return c.json({ error: 'Not found' }, 404);
   const config = parseEnv(c.env);
   const briefing = await generateTacticalBriefing(c.env, {

@@ -1,5 +1,6 @@
 import { SectionLabel } from '../tactical/SectionLabel';
 import { useI18n } from '../../lib/i18n/I18nContext';
+import { DataKindBadge, DataKindMark } from '../ui/DataKindBadge';
 
 type Insight = {
   variable: string;
@@ -41,9 +42,9 @@ export function MultiVariablePanel({ analysis, loading }: Props) {
   return (
     <section className="panel-dense space-y-4 border-magenta/15">
       <div className="flex items-center justify-between">
-        <SectionLabel title={t('multiVar.title')} subtitle={t('multiVar.subtitle')} accent="magenta" />
+        <SectionLabel title={t('multiVar.title')} subtitle={t('multiVar.subtitle')} accent="magenta" dataKind="predicted" />
         <span className="font-mono-data text-xs text-cyan">
-          {(analysis.confidence * 100).toFixed(0)}%
+          <DataKindMark kind="predicted" /> {(analysis.confidence * 100).toFixed(0)}%
         </span>
       </div>
       <p className="text-sm leading-relaxed text-foreground/90">{analysis.executiveSummary}</p>

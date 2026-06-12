@@ -5,14 +5,26 @@ import { logInfo } from '../utils/logger';
 import { mockScoreAtMinute } from '../services/matchLifecycle';
 import { processMatchCompletion } from '../services/tournamentProgression';
 import { resolveMatchDataProvider } from './matchDataProvider';
+import { syncFifaWc2026Matches } from './fifa/fifaLiveSync';
 
 export type RefreshMatchDataResult = {
   updatedIds: string[];
   completedIds: string[];
 };
 
-/** Near-real-time refresh: live ticks, finalize at FT, then progression + recompute. */
+function fifaLiveEnabled(env: AppEnv): boolean {
+  const cfg = parseEnv(env);
+  return cfg.fifaLiveEnabled || !cfg.mockSources;
+}
+
+/** Near-real-time refresh: FIFA Match Centre sync or mock ticks, then progression + recompute. */
 export async function refreshMatchData(env: AppEnv): Promise<RefreshMatchDataResult> {
+  if (fifaLiveEnabled(env)) {
+    const fifa = await syncFifaWc2026Matches(env);
+    await env.KV.put('meta:last_data_refresh', nowIso(), { expirationTtl: 86400 });
+    return { updatedIds: fifa.updatedIds, completedIds: fifa.completedIds };
+  }
+
   const updatedIds: string[] = [];
   const completedIds: string[] = [];
   const now = nowIso();

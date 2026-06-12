@@ -38,6 +38,8 @@ export const TEAM_NAME_TO_ID: Record<string, string> = {
   Peru: 'team-per',
   Chile: 'team-chi',
   Italy: 'team-ita',
+  'South Africa': 'team-rsa',
+  Czechia: 'team-cze',
   Ukraine: 'team-ukr',
   Sweden: 'team-swe',
   Austria: 'team-aut',

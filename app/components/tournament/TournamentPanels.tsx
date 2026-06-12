@@ -4,6 +4,7 @@ import { api, type GroupStandingsPayload } from '../../lib/api';
 import { resolveMatchHref } from '../../lib/matchPaths';
 import { useI18n } from '../../lib/i18n/I18nContext';
 import { formatLocalizedVersus, matchStageLabel } from '../../lib/i18n/stageLabels';
+import { MatchResultScore } from '../match/MatchResultScore';
 
 const GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const;
 
@@ -218,9 +219,13 @@ export function BracketPanel() {
                         </span>
                       )}
                       {m.status === 'completed' && (
-                        <span className="shrink-0 font-mono-data text-xs text-foreground">
-                          {m.homeScore}–{m.awayScore}
-                        </span>
+                        <MatchResultScore
+                          homeScore={m.homeScore}
+                          awayScore={m.awayScore}
+                          status={m.status}
+                          variant="badge"
+                          className="shrink-0"
+                        />
                       )}
                     </div>
                     <p className="mt-0.5 text-[10px] text-muted">

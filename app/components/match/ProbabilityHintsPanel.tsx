@@ -1,4 +1,5 @@
 import { Bilingual, BiHint } from '../i18n/Bilingual';
+import { DataKindBadge } from '../ui/DataKindBadge';
 
 export type Hint = {
   id: string;
@@ -16,7 +17,10 @@ export function ProbabilityHintsPanel({ hints }: Props) {
 
   return (
     <section className="panel space-y-3 border-pressing/20 shadow-pressing/5">
-      <Bilingual k="match.hints" as="h3" className="text-sm font-semibold uppercase tracking-wider text-pressing" />
+      <div className="flex flex-wrap items-center gap-2">
+        <Bilingual k="match.hints" as="h3" className="text-sm font-semibold uppercase tracking-wider text-pressing" />
+        <DataKindBadge kind="predicted" compact />
+      </div>
       <Bilingual k="match.hintsNote" as="p" className="text-xs" />
       <ul className="space-y-2">
         {hints.map((h) => (

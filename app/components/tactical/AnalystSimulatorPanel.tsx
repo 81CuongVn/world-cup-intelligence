@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { adjustProbabilities, type SimulatorScenario } from '../../lib/simulator';
 import { SectionLabel } from './SectionLabel';
 import { useI18n } from '../../lib/i18n/I18nContext';
+import { DataKindLegend } from '../ui/DataKindBadge';
 
 type Props = {
   base: {
@@ -38,7 +39,8 @@ export function AnalystSimulatorPanel({ base, onChange }: Props) {
 
   return (
     <div className="panel-dense border-lime/20">
-      <SectionLabel title={t('simulator.title')} subtitle={t('simulator.subtitleDetail')} accent="lime" />
+      <SectionLabel title={t('simulator.title')} subtitle={t('simulator.subtitleDetail')} accent="lime" dataKind="simulated" />
+      <DataKindLegend className="mb-3" />
       <div className="space-y-4">
         {sliders.map((s) => (
           <label key={s.key} className="block text-xs">

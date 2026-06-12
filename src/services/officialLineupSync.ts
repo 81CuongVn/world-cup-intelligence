@@ -147,6 +147,8 @@ export async function syncOfficialSquadToMatch(
   if (!shouldReplaceLineup(existing, 'squad_official')) return false;
 
   const starters = pickStartingEleven(squadData.players, matchId, teamId);
+  const starterIds = new Set(starters.map((p) => p.player_id));
+  const bench = squadData.players.filter((p) => !starterIds.has(p.player_id)).slice(0, 7);
   const formation =
     inferFormationFromPlayers(starters) ||
     FORMATIONS[hashString(`${matchId}:${teamId}`) % FORMATIONS.length];
@@ -160,12 +162,20 @@ export async function syncOfficialSquadToMatch(
     isOfficial: true,
     confidence: squadData.squad.confidence,
     publishedAt: squadData.squad.announced_at,
-    players: starters.map((p, i) => ({
-      playerId: p.player_id,
-      isStarter: true,
-      positionSlot: p.listed_position ?? p.position ?? String(i + 1),
-      shirtNumber: p.shirt_number,
-    })),
+    players: [
+      ...starters.map((p, i) => ({
+        playerId: p.player_id,
+        isStarter: true,
+        positionSlot: p.listed_position ?? p.position ?? String(i + 1),
+        shirtNumber: p.shirt_number,
+      })),
+      ...bench.map((p, i) => ({
+        playerId: p.player_id,
+        isStarter: false,
+        positionSlot: p.listed_position ?? p.position ?? `SUB${i + 1}`,
+        shirtNumber: p.shirt_number,
+      })),
+    ],
   });
 
   return true;
@@ -183,19 +193,26 @@ export type SyncOfficialLineupsResult = {
  */
 export async function syncOfficialLineupsToMatches(
   env: AppEnv,
-  options: { hoursAhead?: number; recompute?: boolean } = {},
+  options: { hoursAhead?: number; recompute?: boolean; allScheduled?: boolean } = {},
 ): Promise<SyncOfficialLineupsResult> {
   const hoursAhead = options.hoursAhead ?? 24 * 14;
-  const { results } = await env.DB.prepare(
-    `SELECT id, home_team_id, away_team_id FROM matches
-     WHERE tournament_id = ?
-       AND status IN ('scheduled', 'live')
-       AND kickoff_utc <= datetime('now', ? || ' hours')
-       AND kickoff_utc >= datetime('now', '-6 hours')
-     ORDER BY kickoff_utc ASC`,
-  )
-    .bind(WC2026_TOURNAMENT_ID, `+${hoursAhead}`)
-    .all<{ id: string; home_team_id: string; away_team_id: string }>();
+  const allScheduled = options.allScheduled ?? false;
+
+  const sql = allScheduled
+    ? `SELECT id, home_team_id, away_team_id FROM matches
+       WHERE tournament_id = ? AND status IN ('scheduled', 'live')
+       ORDER BY kickoff_utc ASC`
+    : `SELECT id, home_team_id, away_team_id FROM matches
+       WHERE tournament_id = ?
+         AND status IN ('scheduled', 'live')
+         AND kickoff_utc <= datetime('now', ? || ' hours')
+         AND kickoff_utc >= datetime('now', '-6 hours')
+       ORDER BY kickoff_utc ASC`;
+
+  const stmt = env.DB.prepare(sql).bind(
+    ...(allScheduled ? [WC2026_TOURNAMENT_ID] : [WC2026_TOURNAMENT_ID, `+${hoursAhead}`]),
+  );
+  const { results } = await stmt.all<{ id: string; home_team_id: string; away_team_id: string }>();
 
   const matches = results ?? [];
   const updatedMatchIds = new Set<string>();

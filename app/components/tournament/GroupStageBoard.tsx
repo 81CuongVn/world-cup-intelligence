@@ -7,6 +7,7 @@ import { groupStageLabel, KNOCKOUT_STAGE_ORDER, matchStageLabel } from '../../li
 import { CompactMatchProb } from './CompactMatchProb';
 import { MatchTeamsWithFlags, TeamNameWithFlag } from '../team/TeamNameWithFlag';
 import { MatchKickoffDisplay } from '../match/MatchKickoffDisplay';
+import { MatchResultScore, hasMatchResult } from '../match/MatchResultScore';
 
 const GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const;
 
@@ -132,10 +133,7 @@ function GroupCard({
       <ul className="space-y-0.5 border-t border-border/40 pt-1.5">
         {fixtures.map((m) => {
           const prob = probs[m.id];
-          const score =
-            m.status === 'completed' || m.status === 'live'
-              ? `${m.home_score}-${m.away_score}`
-              : null;
+          const showScore = hasMatchResult(m.status);
 
           return (
             <li key={m.id}>
@@ -157,8 +155,16 @@ function GroupCard({
                     separator="–"
                     flagClassName="h-2 w-3 rounded-sm object-cover ring-1 ring-white/10 sm:h-2.5 sm:w-4"
                   />
-                  {score != null && (
-                    <span className="ml-1 font-mono-data font-semibold text-foreground">{score}</span>
+                  {showScore && (
+                    <MatchResultScore
+                      homeScore={m.home_score}
+                      awayScore={m.away_score}
+                      status={m.status}
+                      variant={
+                        m.status === 'completed' || m.status === 'finished' ? 'badge' : 'compact'
+                      }
+                      className="ml-1"
+                    />
                   )}
                   {m.status === 'live' && (
                     <span className="ml-1 text-[9px] font-bold text-live">{t('common.live')}</span>
@@ -204,10 +210,7 @@ function KnockoutRoundPanel({
     <ul className="divide-y divide-border/40 rounded-lg border border-border/50 bg-panel2/20">
       {roundMatches.map((m) => {
         const prob = probs[m.id];
-        const score =
-          m.status === 'completed' || m.status === 'live'
-            ? `${m.home_score}-${m.away_score}`
-            : null;
+        const showScore = hasMatchResult(m.status);
 
         return (
           <li key={m.id}>
@@ -228,7 +231,17 @@ function KnockoutRoundPanel({
                   awayCountryCode={m.away_country_code}
                   separator="–"
                 />
-                {score != null && <span className="ml-2 font-mono-data text-foreground">{score}</span>}
+                {showScore && (
+                  <MatchResultScore
+                    homeScore={m.home_score}
+                    awayScore={m.away_score}
+                    status={m.status}
+                    variant={
+                      m.status === 'completed' || m.status === 'finished' ? 'badge' : 'compact'
+                    }
+                    className="ml-2"
+                  />
+                )}
               </span>
               <CompactMatchProb homeWin={prob?.homeWin} draw={prob?.draw} awayWin={prob?.awayWin} />
               <span className="text-[10px] text-cyan opacity-70 group-hover:opacity-100">

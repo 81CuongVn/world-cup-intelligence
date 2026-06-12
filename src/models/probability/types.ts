@@ -52,6 +52,23 @@ export type LineupFeatures = {
   missingKeyRoles: string[];
 };
 
+export type CoachFeatures = {
+  coachId: string;
+  name: string;
+  wcAppearances: number;
+  tenureYears: number;
+  tacticalRating: number;
+  disciplineIndex: number;
+  homeNationMatch: boolean;
+};
+
+export type RefereeFeatures = {
+  name: string;
+  strictness: number;
+  avgYellowCards: number;
+  avgRedCards: number;
+};
+
 export type MatchFeatureInput = {
   matchId: string;
   tournamentYear: number;
@@ -62,8 +79,15 @@ export type MatchFeatureInput = {
   awayTeam: TeamFeatures;
   homeLineup?: LineupFeatures;
   awayLineup?: LineupFeatures;
+  homeCoach?: CoachFeatures;
+  awayCoach?: CoachFeatures;
+  referee?: RefereeFeatures;
   currentScore: { home: number; away: number };
   sourceConfidence: number;
+  /** WC2026 co-host playing at home */
+  isHomeHost?: boolean;
+  homeCountryCode?: string;
+  awayCountryCode?: string;
 };
 
 export type ProbabilityResult = {

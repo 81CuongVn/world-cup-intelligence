@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { NewsArticle } from '../../lib/api';
 import { EditorialArticleLayout } from '../editorial/EditorialArticleLayout';
 import { SourceConfidencePanel } from '../intelligence/SourceConfidencePanel';
@@ -74,6 +75,24 @@ export function NewsArticleReadView({
             <p className="text-sm leading-relaxed text-muted">{t('news.translationFallback')}</p>
           )}
           <div className="whitespace-pre-line text-foreground/95">{summary}</div>
+
+          {article.impact_summary_vi && article.affected_match_ids && article.affected_match_ids.length > 0 && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-2">
+              <p className="label-tactical text-amber-400">{t('news.impactAnalysis')}</p>
+              <p className="text-sm leading-relaxed text-foreground/90">{article.impact_summary_vi}</p>
+              <div className="flex flex-wrap gap-2">
+                {article.affected_match_ids.map((matchId) => (
+                  <Link
+                    key={matchId}
+                    to={`/matches/${matchId}`}
+                    className="text-xs font-semibold text-cyan hover:underline"
+                  >
+                    {t('news.viewAffectedMatch')} → {matchId}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {(!needsVi || !translationPending) && article.source_url && (
             <a

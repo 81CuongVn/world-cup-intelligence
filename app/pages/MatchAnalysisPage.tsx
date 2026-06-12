@@ -9,6 +9,7 @@ import {
   type MatchPreviewAnalysis,
   type HistoryMatch,
   type H2HSummary,
+  type TeamRecentWcMatch,
 } from '../lib/api';
 import { TeamSystemPanel } from '../components/team/TeamSystemPanel';
 import { ScenarioLikelihoodPanel } from '../components/scenarios/ScenarioLikelihoodPanel';
@@ -28,6 +29,7 @@ import { resolveMatchHref } from '../lib/matchPaths';
 import { useLegacyMatchRedirect } from '../lib/useLegacyMatchRedirect';
 import { useMatchScenarioLive } from '../lib/useMatchScenarioLive';
 import { matchAnalysisPath } from '@/utils/matchSlug';
+import { DataKindBadge } from '../components/ui/DataKindBadge';
 
 export function MatchAnalysisPage() {
   const { matchId } = useParams();
@@ -40,6 +42,8 @@ export function MatchAnalysisPage() {
   const [teamNames, setTeamNames] = useState({ home: '', away: '' });
   const [wcHistory, setWcHistory] = useState<HistoryMatch[]>([]);
   const [wcSummary, setWcSummary] = useState<H2HSummary | null>(null);
+  const [homeRecentWc, setHomeRecentWc] = useState<TeamRecentWcMatch[]>([]);
+  const [awayRecentWc, setAwayRecentWc] = useState<TeamRecentWcMatch[]>([]);
   const [loading, setLoading] = useState(true);
 
   const { match, prob } = useMatchLiveData(matchId);
@@ -58,10 +62,14 @@ export function MatchAnalysisPage() {
         });
         setWcHistory(r.data.worldCupHistory ?? r.data.history);
         setWcSummary(r.data.worldCupSummary ?? r.data.summary);
+        setHomeRecentWc(r.data.homeRecentWc ?? []);
+        setAwayRecentWc(r.data.awayRecentWc ?? []);
       }).catch(() => {
         setTeamNames({ home: '', away: '' });
         setWcHistory([]);
         setWcSummary(null);
+        setHomeRecentWc([]);
+        setAwayRecentWc([]);
       }),
       api.matchTeamSystem(matchId).then((r) => setTeamSystem(r.data)).catch(() => setTeamSystem(null)),
       api.matchScenarios(matchId).then((r) => setScenarios(r.data)).catch(() => setScenarios(null)),
@@ -157,7 +165,10 @@ export function MatchAnalysisPage() {
 
       {prob && (
         <section className="space-y-2">
-          <h2 className="label-tactical text-cyan">{t('matchAnalysis.modelProb')}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="label-tactical text-cyan">{t('matchAnalysis.modelProb')}</h2>
+            <DataKindBadge kind="predicted" compact />
+          </div>
           <ProbabilityStrip
             homeWin={prob.homeWinProb}
             draw={prob.drawProb}
@@ -180,6 +191,8 @@ export function MatchAnalysisPage() {
           awayName={away}
           history={wcHistory}
           summary={wcSummary}
+          homeRecentWc={homeRecentWc}
+          awayRecentWc={awayRecentWc}
         />
       )}
       <MatchPreviewAnalysisPanel preview={preview} loading={loading} />

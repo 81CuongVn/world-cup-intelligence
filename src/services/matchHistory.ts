@@ -1,5 +1,6 @@
 import type { AppEnv } from '../env';
 import { WC2026_TOURNAMENT_ID } from '../constants/tournament';
+import { TEAM_NAME_TO_ID } from '../data/teamNameMap';
 
 export type HeadToHeadMatch = {
   id: string;
@@ -41,6 +42,16 @@ export type TeamWcOpponentRecord = {
   losses: number;
   goalsFor: number;
   goalsAgainst: number;
+};
+
+export type TeamRecentWcMatch = HeadToHeadMatch & {
+  opponentId: string;
+  opponentName: string;
+  opponentShort: string | null;
+  teamScore: number;
+  opponentScore: number;
+  result: 'W' | 'D' | 'L';
+  isHome: boolean;
 };
 
 const WC_HISTORY_SQL_FILTER = `
@@ -154,6 +165,79 @@ export function groupTeamWorldCupMeetings(
   });
 }
 
+export async function resolveTeamIdsForWcHistory(env: AppEnv, teamId: string): Promise<string[]> {
+  const team = await env.DB.prepare(`SELECT id, name, country_code FROM teams WHERE id = ?`)
+    .bind(teamId)
+    .first<{ id: string; name: string; country_code: string | null }>();
+  if (!team) return [teamId];
+
+  const ids = new Set<string>([teamId]);
+  if (team.country_code) {
+    const { results } = await env.DB.prepare(`SELECT id FROM teams WHERE country_code = ?`)
+      .bind(team.country_code)
+      .all<{ id: string }>();
+    for (const row of results ?? []) ids.add(row.id);
+  }
+
+  const legacyId = TEAM_NAME_TO_ID[team.name];
+  if (legacyId) ids.add(legacyId);
+
+  return [...ids];
+}
+
+export function mapMatchesToTeamPerspective(
+  aliasIds: Set<string>,
+  matches: HeadToHeadMatch[],
+): TeamRecentWcMatch[] {
+  return matches.map((m) => {
+    const isHome = aliasIds.has(m.home_team_id);
+    const teamScore = isHome ? m.home_score : m.away_score;
+    const opponentScore = isHome ? m.away_score : m.home_score;
+    const opponentId = isHome ? m.away_team_id : m.home_team_id;
+    const opponentName = isHome ? m.away_name : m.home_name;
+    const opponentShort = isHome ? m.away_short : m.home_short;
+    return {
+      ...m,
+      opponentId,
+      opponentName,
+      opponentShort,
+      teamScore,
+      opponentScore,
+      result: teamScore > opponentScore ? 'W' : teamScore < opponentScore ? 'L' : 'D',
+      isHome,
+    };
+  });
+}
+
+export async function getTeamRecentWorldCupMatches(
+  env: AppEnv,
+  teamId: string,
+  limit = 5,
+  excludeMatchId?: string,
+): Promise<TeamRecentWcMatch[]> {
+  const aliasIds = new Set(await resolveTeamIdsForWcHistory(env, teamId));
+  if (aliasIds.size === 0) return [];
+
+  const placeholders = [...aliasIds].map(() => '?').join(', ');
+  const excludeClause = excludeMatchId ? 'AND m.id != ?' : '';
+  const binds: (string | number)[] = [...aliasIds, ...aliasIds];
+  if (excludeMatchId) binds.push(excludeMatchId);
+  binds.push(limit);
+
+  const { results } = await env.DB.prepare(
+    `${H2H_SELECT}
+     WHERE ${WC_HISTORY_SQL_FILTER}
+       ${excludeClause}
+       AND (m.home_team_id IN (${placeholders}) OR m.away_team_id IN (${placeholders}))
+     ORDER BY t.year DESC, m.kickoff_utc DESC
+     LIMIT ?`,
+  )
+    .bind(...binds)
+    .all<HeadToHeadMatch>();
+
+  return mapMatchesToTeamPerspective(aliasIds, results ?? []);
+}
+
 export async function getWorldCupHeadToHeadBetween(
   env: AppEnv,
   homeTeamId: string,
@@ -215,6 +299,8 @@ export async function getHeadToHead(
   worldCupHistory: HeadToHeadMatch[];
   summary: HeadToHeadSummary;
   worldCupSummary: HeadToHeadSummary;
+  homeRecentWc: TeamRecentWcMatch[];
+  awayRecentWc: TeamRecentWcMatch[];
 } | null> {
   const current = await env.DB.prepare(
     `${H2H_SELECT}
@@ -225,12 +311,11 @@ export async function getHeadToHead(
 
   if (!current) return null;
 
-  const worldCupHistory = await getWorldCupHeadToHeadBetween(
-    env,
-    current.home_team_id,
-    current.away_team_id,
-    matchId,
-  );
+  const [worldCupHistory, homeRecentWc, awayRecentWc] = await Promise.all([
+    getWorldCupHeadToHeadBetween(env, current.home_team_id, current.away_team_id, matchId),
+    getTeamRecentWorldCupMatches(env, current.home_team_id, 5, matchId),
+    getTeamRecentWorldCupMatches(env, current.away_team_id, 5, matchId),
+  ]);
 
   const worldCupSummary = summarizePairFromPerspective(
     worldCupHistory,
@@ -244,5 +329,7 @@ export async function getHeadToHead(
     worldCupHistory,
     summary: worldCupSummary,
     worldCupSummary,
+    homeRecentWc,
+    awayRecentWc,
   };
 }

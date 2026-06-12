@@ -3,6 +3,8 @@ import { useI18n } from '../../lib/i18n/I18nContext';
 import { matchStageLabel } from '../../lib/i18n/stageLabels';
 import { pct } from '../../lib/format';
 import { TeamNameWithFlag } from '../team/TeamNameWithFlag';
+import { PredictedActualScores } from '../match/PredictedActualScores';
+import { DataKindBadge, DataKindMark } from '../ui/DataKindBadge';
 
 type Props = {
   home: string;
@@ -63,24 +65,42 @@ export function MatchHeader({
 
       {homeWin != null && (
         <div className="mt-2 flex flex-wrap items-center gap-3 border-b border-border/40 pb-2 md:mt-3 md:gap-4 md:pb-3">
-          <div className="font-mono-data text-xs text-muted">
+          <div className="flex items-center gap-2 font-mono-data text-xs text-muted">
             {t('featured.modelNow')}
+            <DataKindBadge kind="predicted" compact />
           </div>
           <div className="flex flex-wrap gap-4 font-mono-data text-sm">
             <span className="text-cyan">
-              {t('common.abbrHome')} <span className="text-foreground">{pct(homeWin)}</span>
+              {t('common.abbrHome')}{' '}
+              <span className="text-foreground">
+                <DataKindMark />
+                {pct(homeWin)}
+              </span>
             </span>
             <span className="text-muted">
-              {t('common.abbrDraw')} <span className="text-foreground">{pct(draw ?? 0)}</span>
+              {t('common.abbrDraw')}{' '}
+              <span className="text-foreground">
+                <DataKindMark />
+                {pct(draw ?? 0)}
+              </span>
             </span>
             <span className="text-magenta">
-              {t('common.abbrAway')} <span className="text-foreground">{pct(awayWin ?? 0)}</span>
+              {t('common.abbrAway')}{' '}
+              <span className="text-foreground">
+                <DataKindMark />
+                {pct(awayWin ?? 0)}
+              </span>
             </span>
           </div>
           {mostLikelyScore && (
-            <span className="font-mono-data text-xs text-yellow">
-              → {mostLikelyScore}
-            </span>
+            <PredictedActualScores
+              predicted={mostLikelyScore}
+              homeScore={homeScore}
+              awayScore={awayScore}
+              status={status}
+              layout="inline"
+              size="sm"
+            />
           )}
         </div>
       )}
@@ -96,7 +116,13 @@ export function MatchHeader({
           />
         </h1>
         <div className="score-pulse rounded-lg border border-cyan/30 bg-background/80 px-3 py-2 md:rounded-xl md:px-8 md:py-4">
+          {(isLive || status === 'completed') && (
+            <p className="mb-1 flex justify-center">
+              <DataKindBadge kind="actual" compact />
+            </p>
+          )}
           <p className="font-display text-2xl tabular-nums text-foreground sm:text-3xl md:text-6xl lg:text-7xl">
+            {(isLive || status === 'completed') && <DataKindMark kind="actual" className="text-base md:text-2xl" />}
             {homeScore}
             <span className="mx-0.5 text-cyan/60 md:mx-1">–</span>
             {awayScore}

@@ -1,6 +1,8 @@
 export type PitchEvent = {
   x?: number;
   y?: number;
+  end_x?: number;
+  end_y?: number;
   event_type?: string;
   team_id?: string;
 };
@@ -25,9 +27,27 @@ export function EventTrajectoryLayer({ events, width = 100, height = 65 }: Props
 
   return (
     <g className="event-trajectory">
+      {plotted.map((e, i) => {
+        if (e.end_x != null && e.end_y != null) {
+          return (
+            <line
+              key={`vec-${i}`}
+              x1={toX(e.x!)}
+              y1={toY(e.y!)}
+              x2={toX(e.end_x)}
+              y2={toY(e.end_y)}
+              stroke={eventColor(e.event_type)}
+              strokeWidth="0.4"
+              strokeOpacity="0.45"
+            />
+          );
+        }
+        return null;
+      })}
       {plotted.slice(1).map((e, i) => {
         const prev = plotted[i];
         if (!prev?.x || !prev?.y || e.x == null || e.y == null) return null;
+        if (prev.end_x != null) return null;
         return (
           <line
             key={`arrow-${i}`}

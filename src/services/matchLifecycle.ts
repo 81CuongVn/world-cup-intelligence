@@ -12,8 +12,19 @@ export function isKnockoutStage(stage: string | null): boolean {
   return !!stage && stage !== 'Group';
 }
 
+/** Fixed official results — mock ingest must not overwrite these. */
+const OFFICIAL_FINAL_SCORES: Record<string, { home: number; away: number }> = {
+  'm-w26-ga-1v2': { home: 2, away: 0 },
+};
+
 /** Deterministic mock score from match id + elapsed minute (for demo ingest). */
 export function mockScoreAtMinute(matchId: string, minute: number): { home: number; away: number } {
+  const official = OFFICIAL_FINAL_SCORES[matchId];
+  if (official) {
+    if (minute >= 67) return official;
+    if (minute >= 9) return { home: 1, away: 0 };
+    return { home: 0, away: 0 };
+  }
   let hash = 0;
   for (let i = 0; i < matchId.length; i += 1) {
     hash = (hash * 31 + matchId.charCodeAt(i)) | 0;

@@ -279,13 +279,17 @@ newsRoutes.get('/:docId', async (c) => {
             sd.hot_score, sr.source_name`;
 
   const row = await c.env.DB.prepare(
-    `SELECT ${selectCols}
+    `SELECT ${selectCols}, sd.impact_level, sd.impact_summary_vi, sd.affected_match_ids_json
      FROM source_documents sd
      LEFT JOIN source_registry sr ON sr.id = sd.source_id
      WHERE sd.id = ?`,
   )
     .bind(docId)
-    .first<NewsRow>();
+    .first<NewsRow & {
+      impact_level?: string | null;
+      impact_summary_vi?: string | null;
+      affected_match_ids_json?: string | null;
+    }>();
 
   if (!row) return c.json({ error: 'Not found' }, 404);
 
@@ -295,5 +299,22 @@ newsRoutes.get('/:docId', async (c) => {
     row.summary_vi = patched.summary_vi;
   }
 
-  return c.json({ data: mapArticle(row) });
+  const article = mapArticle(row);
+  let affectedMatchIds: string[] = [];
+  try {
+    affectedMatchIds = row.affected_match_ids_json
+      ? (JSON.parse(row.affected_match_ids_json) as string[])
+      : [];
+  } catch {
+    affectedMatchIds = [];
+  }
+
+  return c.json({
+    data: {
+      ...article,
+      impact_level: row.impact_level ?? null,
+      impact_summary_vi: row.impact_summary_vi ?? null,
+      affected_match_ids: affectedMatchIds,
+    },
+  });
 });

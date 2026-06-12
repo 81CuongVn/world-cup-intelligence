@@ -3,6 +3,12 @@ dist/
 .wrangler/
 .dev.vars
 .env
+.env.local
+.env.*.local
+!.env.example
+secrets/
+cf-deploy.token
+dist/**/.dev.vars
 *.log
 .DS_Store
 tmp-*

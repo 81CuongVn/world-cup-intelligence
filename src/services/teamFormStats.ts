@@ -26,17 +26,26 @@ export async function getTeamFormSnapshot(
   db: D1Database,
   teamId: string,
   limit = 6,
+  tournamentId?: string,
 ): Promise<TeamFormSnapshot | null> {
-  const { results } = await db
-    .prepare(
-      `SELECT home_team_id, away_team_id, home_score, away_score, home_xg, away_xg
+  const baseSql = `SELECT home_team_id, away_team_id, home_score, away_score, home_xg, away_xg
        FROM matches
-       WHERE status = 'completed' AND (home_team_id = ? OR away_team_id = ?)
-       ORDER BY kickoff_utc DESC
-       LIMIT ?`,
-    )
-    .bind(teamId, teamId, limit)
-    .all<MatchRow>();
+       WHERE status = 'completed' AND (home_team_id = ? OR away_team_id = ?)`;
+  const orderLimit = ` ORDER BY kickoff_utc DESC LIMIT ?`;
+
+  const { results } = tournamentId
+    ? await db
+        .prepare(`${baseSql} AND tournament_id = ?${orderLimit}`)
+        .bind(teamId, teamId, tournamentId, limit)
+        .all<MatchRow>()
+    : await db
+        .prepare(`${baseSql}${orderLimit}`)
+        .bind(teamId, teamId, limit)
+        .all<MatchRow>();
+
+  if (!results?.length && tournamentId) {
+    return getTeamFormSnapshot(db, teamId, limit);
+  }
 
   if (!results?.length) return null;
 

@@ -8,6 +8,8 @@ import { useI18n } from '../../lib/i18n/I18nContext';
 import { groupStageLabel, matchStageLabel } from '../../lib/i18n/stageLabels';
 import { MatchKickoffCountdown } from './MatchKickoffCountdown';
 import { TeamNameWithFlag } from '../team/TeamNameWithFlag';
+import { PredictedActualScores } from '../match/PredictedActualScores';
+import { DataKindBadge, DataKindMark } from '../ui/DataKindBadge';
 
 type Props = {
   match: ScheduleMatch & { probability?: ProbabilityData | null };
@@ -44,21 +46,33 @@ export function FeaturedMatchHero({ match }: Props) {
           </div>
 
           {p && (
-            <p className="mt-2 font-mono-data text-xs text-muted">
-              {t('featured.modelNow')}{' '}
+            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono-data text-xs text-muted">
+              <span className="inline-flex items-center gap-1">
+                {t('featured.modelNow')}
+                <DataKindBadge kind="predicted" compact />
+              </span>
               <span className="text-cyan">
-                {t('common.abbrHome')} {pct(p.homeWinProb)}
-              </span>{' '}
+                {t('common.abbrHome')} <DataKindMark />
+                {pct(p.homeWinProb)}
+              </span>
               <span className="text-muted">
-                {t('common.abbrDraw')} {pct(p.drawProb)}
-              </span>{' '}
+                {t('common.abbrDraw')} <DataKindMark />
+                {pct(p.drawProb)}
+              </span>
               <span className="text-magenta">
-                {t('common.abbrAway')} {pct(p.awayWinProb)}
+                {t('common.abbrAway')} <DataKindMark />
+                {pct(p.awayWinProb)}
               </span>
               {p.mostLikelyScore && (
-                <span className="text-yellow">
-                  {' '}
-                  → {p.mostLikelyScore}
+                <span className="ml-1">
+                  <PredictedActualScores
+                    predicted={p.mostLikelyScore}
+                    homeScore={match.home_score}
+                    awayScore={match.away_score}
+                    status={match.status}
+                    layout="inline"
+                    size="sm"
+                  />
                 </span>
               )}
             </p>
@@ -75,7 +89,13 @@ export function FeaturedMatchHero({ match }: Props) {
               />
             </h2>
             <div className="score-pulse rounded-card border border-cyan/30 bg-background/80 px-5 py-3 md:px-8 md:py-4">
+              {(isLive || match.status === 'completed') && (
+                <p className="mb-1 flex justify-center">
+                  <DataKindBadge kind="actual" compact />
+                </p>
+              )}
               <p className="font-heading text-4xl tabular-nums text-foreground md:text-6xl">
+                {(isLive || match.status === 'completed') && <DataKindMark kind="actual" />}
                 {match.home_score}
                 <span className="mx-1 text-cyan/70">–</span>
                 {match.away_score}

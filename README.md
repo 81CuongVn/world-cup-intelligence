@@ -8,18 +8,35 @@
 
 ## Cập nhật mới (06/2026)
 
-Phiên bản đã deploy lên **UAT + Production** (Worker production `d7426c99-…`).
+Phiên bản đã deploy lên **Production** ([wcstat.orangecloud.vn](https://wcstat.orangecloud.vn)) — Worker `bff73993-…`.
+
+### Minh chứng trên web (Mexico 2–0 South Africa)
+
+| | |
+|---|---|
+| **Trang trận — tỉ số FT, recap, dự đoán** | ![Trang trận WC 2026](docs/screenshots/01-match-page-overview.png) |
+| **Thống kê trận đấu** — layout cân đối, bar kiểm soát bóng, nguồn FIFA/Opta | ![Thống kê trận](docs/screenshots/02-match-live-stats.png) |
+| **Xác suất thắng/hòa/thua** — không còn dấu `~` trước số dự đoán | ![Xác suất mô hình](docs/screenshots/03-probability-no-tilde.png) |
+| **Sơ đồ sân** — đội hình thực tế, điểm cầu thủ, vector di chuyển | ![Pitch map](docs/screenshots/04-pitch-map.png) |
+
+Demo live: [Mexico vs South Africa](https://wcstat.orangecloud.vn/matches/vong-bang-a-mexico-vs-south-africa)
 
 | Hạng mục | Thay đổi |
 |----------|----------|
-| **Bảng đấu — xác suất trận** | Trận đã phân tích hiện **C · H · K** (% mô hình); trận chưa có hiện **«Chưa có»** (không còn dấu `—` mơ hồ). API tự **bổ sung snapshot thiếu** (xem [Thuật toán gap-fill](#gap-fill-xác-suất-bảng-đấu)). |
-| **Mobile UX trang trận** | Thanh tỉ số dính (`MatchStickyScoreBar`), điều hướng section (`MatchSectionNav`: Tổng quan · Thống kê · Dự đoán · Đà trận · Chiến thuật · Kịch bản), panel dự đoán/tóm tắt/analytics riêng. |
-| **Live stats** | `GET /api/matches/:ref/stats` — thống kê trận (sẵn sàng khi có nguồn live; UI `MatchLiveStatsPanel`). |
-| **API xác suất** | `/probability` trả thêm `updatedAt`, `topScorelines`, `drivers`. |
-| **SEO tiếng Việt** | 8 landing page (`/lich-thi-dau-world-cup-2026`, `/bang-xep-hang-world-cup-2026`, …) + mở rộng `sitemap.xml`. |
-| **i18n VI-first** | Đồng bộ nhãn: *Đà trận*, *Vòng loại trực tiếp*, *Tỉ số khả dĩ nhất*; title mặc định *PitchIntel — Tình báo chiến thuật World Cup*. |
-| **UAT tách biệt** | D1/KV/R2/Queues riêng; `npm run deploy` → UAT; production qua `--config wrangler.jsonc --env production`. Chi tiết: [docs/UAT.md](./docs/UAT.md). |
-| **Health** | `/api/health` trả `environment: uat \| production`. |
+| **Trang trận** | Sửa crash thiếu import `MatchAnalyticsPanel`; trang hiển thị đầy đủ sau khi API trả dữ liệu. |
+| **Thống kê trận (`MatchLiveStatsPanel`)** | Layout 3 cột căn giữa, bar possession, highlight số cao hơn; footer nguồn/cập nhật căn giữa. |
+| **Nhãn dự đoán** | Bỏ dấu `~` trên xác suất/xG/tỉ số dự đoán; giữ `●` (thực tế) và `≈` (giả lập). Component `DataKindBadge` / `DataKindMark`. |
+| **Pitch map** | `GET /api/matches/:ref/pitch-map` — sơ đồ sân, lineup live, rating, movement vectors (`PitchMap`, migration `0028`). |
+| **Recap & staff** | Tóm tắt trận FIFA (`MatchRecapPanel`), HLV/trọng tài (`MatchStaffPanel`, migration `0025`). |
+| **News → trận** | Pipeline FIFA WC2026 + RSS mở rộng; dịch VI, publish, ảnh hưởng dự đoán khi tin liên quan trận (`newsMatchImpact`, migration `0029`). |
+| **FIFA live sync** | Lineup/stats/events từ FIFA Match Centre; Mexico–SA seed + lịch sử WC (`0023`–`0027`). |
+| **Deploy an toàn** | `scripts/wrangler-with-env.mjs` đọc token từ `cf-deploy.token` (gitignored); GitHub Actions dùng `CLOUDFLARE_API_TOKEN` secret. |
+| **Bảng đấu — xác suất trận** | Trận đã phân tích hiện **C · H · K** (% mô hình); trận chưa có hiện **«Chưa có»**. API gap-fill (xem [Thuật toán gap-fill](#gap-fill-xác-suất-bảng-đấu)). |
+| **Mobile UX trang trận** | Thanh tỉ số dính, điều hướng section (`MatchSectionNav`), panel dự đoán/tóm tắt/analytics. |
+| **SEO tiếng Việt** | 8 landing page + `sitemap.xml`. |
+| **UAT tách biệt** | `npm run deploy:uat` / `deploy:production` — [docs/UAT.md](./docs/UAT.md). |
+
+Chụp lại screenshot sau deploy: `node scripts/capture-screenshots.mjs` (cần `playwright` tạm thời hoặc `npx playwright`).
 
 ---
 
@@ -317,7 +334,7 @@ npx wrangler dev --remote --port 8787
 | `npm run typecheck` | TypeScript |
 | `npm run deploy` | **UAT** — `npm run deploy:uat` (default) |
 | `npm run deploy:uat` | Build + deploy Worker UAT |
-| `npm run deploy:production` | Build + deploy production: `wrangler deploy --config wrangler.jsonc --env production` |
+| `npm run deploy:production` | Build + deploy production (`wrangler.jsonc --env production`; token qua `cf-deploy.token` hoặc env) |
 | `npm run db:migrate:local` | Migration D1 local |
 | `npm run db:migrate:uat` | Migration D1 UAT remote |
 | `npm run db:migrate:production` | Migration D1 production remote |
@@ -361,7 +378,9 @@ Chi tiết AI Gateway: xem [BRANDING.md](./BRANDING.md). Chính sách agent: [au
 | `GET /api/teams` | Danh sách 48 đội WC 2026 |
 | `GET /api/tournaments/2026/standings` | Bảng xếp hạng 12 bảng + xếp hạng đội thứ 3 |
 | `GET /api/tournaments/2026/match-probabilities` | Xác suất bulk cho lịch/bảng + **gap-fill** tự động; meta `{ total, withProbability, pending }` |
-| `GET /api/matches/:ref/stats` | Thống kê trận (live/FT khi có nguồn) |
+| `GET /api/matches/:ref/stats` | Thống kê trận (live/FT khi có nguồn FIFA/Opta) |
+| `GET /api/matches/:ref/pitch-map` | Sơ đồ sân, lineup, rating, movement vectors |
+| `GET /api/matches/:ref/recap` | Tóm tắt trận + timeline sự kiện (FIFA) |
 | `GET /api/matches/:ref` | Chi tiết trận (`ref` = slug hoặc id cũ `m-*`; trả thêm `slug`) |
 | `GET /api/matches/:ref/lineups` | Đội hình hai bên (official only trên UI) |
 | `GET /api/matches/:ref/preview` | Phân tích trước trận (lineup, form, bảng) |
@@ -406,8 +425,8 @@ npm test            # ✓ 116 tests, 35 files
 
 | Môi trường | URL | Worker version |
 |------------|-----|----------------|
-| Production | [wcstat.orangecloud.vn](https://wcstat.orangecloud.vn) | `d7426c99-2687-43e0-9c67-e09a5a35b95a` |
-| UAT | [wc-tactical-uat.sycu-lee.workers.dev](https://wc-tactical-uat.sycu-lee.workers.dev) | `77f6984f-9e2f-4036-bc4e-ffc859c33399` |
+| Production | [wcstat.orangecloud.vn](https://wcstat.orangecloud.vn) | `bff73993-489e-4108-9fa0-02c812074c92` |
+| UAT | [wc-tactical-uat.sycu-lee.workers.dev](https://wc-tactical-uat.sycu-lee.workers.dev) | *(chạy `npm run deploy:uat` để cập nhật)* |
 
 **Đã kiểm tra:**
 - Xác suất & snapshot engine

@@ -41,6 +41,31 @@ export function buildExplanationFactors(input: MatchFeatureInput): {
       evidenceType: 'statistical',
     },
   ];
+  if (input.homeCoach || input.awayCoach) {
+    const coachSide =
+      (input.homeCoach?.tacticalRating ?? 0.72) >= (input.awayCoach?.tacticalRating ?? 0.72)
+        ? 'home'
+        : 'away';
+    factors.push({
+      key: 'head_coach',
+      label: 'Head coach profile',
+      direction: coachSide,
+      impact: 0.12,
+      confidence: 0.78,
+      evidenceType: 'official',
+    });
+  }
+  if (input.referee && input.referee.strictness > 0.65) {
+    factors.push({
+      key: 'referee_strictness',
+      label: 'Referee card profile',
+      direction: input.homeTeam.fifaRanking <= input.awayTeam.fifaRanking ? 'home' : 'away',
+      impact: (input.referee.strictness - 0.5) * 0.2,
+      confidence: 0.72,
+      evidenceType: 'official',
+    });
+  }
+
   const sorted = [...factors].sort((a, b) => b.impact - a.impact);
   return { positive: sorted.slice(0, 3), negative: sorted.slice(-2) };
 }

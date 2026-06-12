@@ -4,6 +4,7 @@ import { ProbabilityMovementTimeline } from '../tactical/ProbabilityMovementTime
 import type { ProbabilityData } from '../../lib/api';
 import { useI18n } from '../../lib/i18n/I18nContext';
 import { pct } from '../../lib/format';
+import { DataKindBadge, DataKindMark, DataKindLegend } from '../ui/DataKindBadge';
 
 type Props = {
   matchId: string;
@@ -61,8 +62,12 @@ export function ProbabilityMovementPanel({ matchId, prob, currentMinute = 0 }: P
   return (
     <section className="panel space-y-4">
       <div>
-        <h2 className="label-tactical text-cyan">{t('probMovement.title')}</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="label-tactical text-cyan">{t('probMovement.title')}</h2>
+          <DataKindBadge kind="predicted" compact />
+        </div>
         <p className="mt-2 text-sm leading-relaxed text-foreground/80">{t('probMovement.explain')}</p>
+        <DataKindLegend className="mt-2" />
       </div>
 
       {meaningfulEvents.length > 1 ? (

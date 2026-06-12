@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatLineupPlayerLine,
+  lineupPositionGroup,
   normalizeLineupPosition,
 } from '../src/services/lineupDisplay';
 
@@ -20,5 +21,13 @@ describe('lineupDisplay', () => {
     expect(formatLineupPlayerLine({ shirtNumber: null, name: 'Player', position: 'CM' })).toBe(
       '(—) - Player - CM',
     );
+  });
+
+  it('maps positions to lineup groups', () => {
+    expect(lineupPositionGroup('GK')).toBe('GK');
+    expect(lineupPositionGroup('CB')).toBe('DEF');
+    expect(lineupPositionGroup('DM')).toBe('MID');
+    expect(lineupPositionGroup('ST')).toBe('FWD');
+    expect(lineupPositionGroup('LW')).toBe('FWD');
   });
 });

@@ -57,6 +57,8 @@ export const api = {
         summary: H2HSummary;
         worldCupSummary: H2HSummary;
         current: HistoryMatch;
+        homeRecentWc: TeamRecentWcMatch[];
+        awayRecentWc: TeamRecentWcMatch[];
       };
     }>(`/matches/${id}/history`),
   matchHints: (id: string) =>
@@ -64,6 +66,7 @@ export const api = {
   matchBriefing: (id: string) => get<{ data: TacticalBriefing }>(`/matches/${id}/tactical-briefing`),
   matchPreview: (id: string) => get<{ data: MatchPreviewAnalysis }>(`/matches/${id}/preview`),
   matchLineups: (id: string) => get<{ data: MatchLineupsPayload }>(`/matches/${id}/lineups`),
+  matchPitchMap: (id: string) => get<{ data: PitchMapPayload }>(`/matches/${id}/pitch-map`),
   matchTeamSystem: (id: string) =>
     get<{ data: TeamSystemPayload; ai?: unknown }>(`/matches/${id}/team-system`),
   matchScenarios: (id: string) =>
@@ -79,6 +82,8 @@ export const api = {
   matchProbabilityMovement: (id: string) =>
     get<{ data: ProbabilityMovementPayload }>(`/matches/${id}/probability-movement`),
   matchStats: (id: string) => get<{ data: MatchStatsPayload }>(`/matches/${id}/stats`),
+  matchRecap: (id: string) => get<{ data: MatchRecapPayload }>(`/matches/${id}/recap`),
+  matchStaff: (id: string) => get<{ data: MatchStaffPayload }>(`/matches/${id}/staff`),
   historicalTournaments: () => get<{ data: HistoricalTournament[] }>('/tournaments'),
   teams: () => get<{ data: TeamSummary[] }>('/teams'),
   team: (id: string) => get<{ data: TeamSummary }>(`/teams/${id}`),
@@ -148,6 +153,16 @@ export type TeamWcOpponentRecord = {
   losses: number;
   goalsFor: number;
   goalsAgainst: number;
+};
+
+export type TeamRecentWcMatch = HistoryMatch & {
+  opponentId: string;
+  opponentName: string;
+  opponentShort?: string | null;
+  teamScore: number;
+  opponentScore: number;
+  result: 'W' | 'D' | 'L';
+  isHome: boolean;
 };
 
 export type ProbabilityHint = {
@@ -270,6 +285,9 @@ export type NewsArticle = {
   thumbnail_url?: string | null;
   hot_score?: number;
   translated?: boolean;
+  impact_level?: 'none' | 'low' | 'medium' | 'high' | null;
+  impact_summary_vi?: string | null;
+  affected_match_ids?: string[];
 };
 
 export type MatchSummary = {
@@ -298,6 +316,7 @@ export type TeamSummary = {
   country_code?: string | null;
   fifa_ranking?: number;
   elo_rating?: number;
+  coach?: CoachSummary | null;
 };
 
 export type PlayerSummary = {
@@ -331,7 +350,7 @@ export type MatchStatsPayload = {
   homeScore: number;
   awayScore: number;
   updatedAt: string | null;
-  dataSource: 'recorded' | 'unavailable';
+  dataSource: 'recorded' | 'unavailable' | 'fifa_live';
   home: {
     teamId: string;
     teamName: string;
@@ -359,13 +378,80 @@ export type MatchStatsPayload = {
     substitutions: number;
   };
   xgEstimateNote: string;
+  dataSourceLabel?: string;
+};
+
+export type MatchRecapPayload = {
+  matchId: string;
+  slug: string;
+  summaryVi: string;
+  summaryEn: string;
+  sourceId: string | null;
+  updatedAt: string | null;
+  commentary: Array<{
+    id: string;
+    minute: number | null;
+    period: string | null;
+    textVi: string;
+    textEn: string;
+    eventType: string | null;
+  }>;
+  playerStats: Array<{
+    playerId: string;
+    playerName: string;
+    teamId: string;
+    shirtNumber: number | null;
+    minutesPlayed: number;
+    goals: number;
+    assists: number;
+    shots: number;
+    shotsOnTarget: number;
+    xg: number;
+    yellowCards: number;
+    redCards: number;
+  }>;
+};
+
+export type CoachSummary = {
+  id: string;
+  name: string;
+  nationality: string | null;
+  wcAppearances: number;
+  tenureYears: number;
+};
+
+export type MatchStaffPayload = {
+  matchId: string;
+  slug: string;
+  homeCoach: {
+    coachId: string;
+    name: string;
+    nationality: string | null;
+    wcAppearances: number;
+    tenureYears: number;
+    tacticalRating: number;
+    disciplineIndex: number;
+  } | null;
+  awayCoach: MatchStaffPayload['homeCoach'];
+  officials: Array<{
+    role: string;
+    name: string;
+    nationality: string | null;
+    fifaCategory: string | null;
+    strictness: number | null;
+  }>;
+  referee: MatchStaffPayload['officials'][number] | null;
 };
 
 export type LineupPlayerRow = {
   shirtNumber: number | null;
   name: string;
   position: string;
+  positionGroup?: 'GK' | 'DEF' | 'MID' | 'FWD';
+  isStarter?: boolean;
 };
+
+export type LineupGrouped = Record<'GK' | 'DEF' | 'MID' | 'FWD', LineupPlayerRow[]>;
 
 export type MatchLineupSide = {
   teamId: string;
@@ -373,8 +459,14 @@ export type MatchLineupSide = {
   formation: string | null;
   players: string[];
   lineupPlayers?: LineupPlayerRow[];
+  starters?: LineupPlayerRow[];
+  substitutes?: LineupPlayerRow[];
+  grouped?: LineupGrouped;
   hasAccurateLineup?: boolean;
+  hasLineup?: boolean;
   source: string;
+  sourceType?: string | null;
+  confidence?: number | null;
 };
 
 export type MatchLineupsPayload = {
@@ -383,6 +475,52 @@ export type MatchLineupsPayload = {
   home: MatchLineupSide;
   away: MatchLineupSide;
   records?: unknown[];
+};
+
+export type PitchMapPlayer = {
+  playerId: string;
+  name: string;
+  shirtNumber: number | null;
+  position: string;
+  x: number;
+  y: number;
+  isOnPitch: boolean;
+  isStarter: boolean;
+  subMinute: number | null;
+  subType: 'in' | 'out' | null;
+  rating: number | null;
+  movement: { dx: number; dy: number; magnitude: number } | null;
+};
+
+export type PitchMapSide = {
+  teamId: string;
+  teamName: string;
+  formation: string | null;
+  source: string;
+  players: PitchMapPlayer[];
+  bench: PitchMapPlayer[];
+};
+
+export type PitchMapPayload = {
+  matchId: string;
+  slug: string;
+  status: string;
+  minute: number | null;
+  home: PitchMapSide;
+  away: PitchMapSide;
+  events: Array<{
+    id: string;
+    x: number;
+    y: number;
+    endX?: number | null;
+    endY?: number | null;
+    eventType: string;
+    teamId: string | null;
+    playerId: string | null;
+    minute: number | null;
+  }>;
+  showRatings: boolean;
+  updatedAt: string | null;
 };
 
 export type MatchPreviewSidePreview = {

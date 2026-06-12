@@ -22,7 +22,8 @@
   },
   "vars": {
     "ENVIRONMENT": "uat",
-    "MOCK_SOURCES": "true",
+    "MOCK_SOURCES": "false",
+    "FIFA_LIVE_ENABLED": "true",
     "AI_FALLBACK_MODE": "false",
     "VECTORIZE_FALLBACK_MODE": "true",
     "AI_GATEWAY_ENABLED": "true",
@@ -78,10 +79,12 @@
     "production": {
       "name": "wc-tactical-probability-platform",
       "workers_dev": false,
-      "routes": [{ "pattern": "wcstat.orangecloud.vn", "custom_domain": true }],
+      // wcstat.orangecloud.vn is bound via Workers Domains (account API).
+      // Omit routes here — Zone Workers Routes permission is not required for deploy.
       "vars": {
         "ENVIRONMENT": "production",
-        "MOCK_SOURCES": "true",
+        "MOCK_SOURCES": "false",
+    "FIFA_LIVE_ENABLED": "true",
         "AI_FALLBACK_MODE": "false",
         "VECTORIZE_FALLBACK_MODE": "true",
         "AI_GATEWAY_ENABLED": "true",

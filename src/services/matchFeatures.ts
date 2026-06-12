@@ -7,6 +7,9 @@ import {
   type TeamFormSnapshot,
 } from './teamFormStats';
 import { buildLineupFeaturesFromPlayers } from './lineupFeatures';
+import { predictionMatchState } from '../models/probability/matchState';
+import { isWc2026HostTeam } from '../models/probability/matchContext';
+import { loadStaffFeaturesForMatch } from './matchStaff';
 
 function teamToFeatures(team: TeamRow, form?: TeamFormSnapshot | null): TeamFeatures {
   const elo = team.elo_rating ?? 1700;
@@ -59,17 +62,21 @@ export function buildMatchFeatures(
     awayForm?.sourceConfidence ?? 0,
   );
   const baseConfidence = tournamentYear >= 2026 ? 0.88 : 0.82;
+  const state = predictionMatchState(match.status, match.minute, match.home_score, match.away_score);
 
   return {
     matchId: match.id,
     tournamentYear,
     stage: match.stage ?? 'Group',
-    minute: match.minute,
+    minute: state.minute,
     second: 0,
     homeTeam: teamToFeatures(home, homeForm),
     awayTeam: teamToFeatures(away, awayForm),
-    currentScore: { home: match.home_score, away: match.away_score },
+    currentScore: { home: state.home, away: state.away },
     sourceConfidence: formConfidence > 0 ? Math.max(baseConfidence, formConfidence) : baseConfidence,
+    isHomeHost: isWc2026HostTeam(home.country_code),
+    homeCountryCode: home.country_code ?? undefined,
+    awayCountryCode: away.country_code ?? undefined,
   };
 }
 
@@ -116,11 +123,20 @@ export async function buildMatchFeaturesWithForm(
   away: TeamRow,
   tournamentYear: number,
 ): Promise<MatchFeatureInput> {
-  const [homeForm, awayForm, homeLineup, awayLineup] = await Promise.all([
-    getTeamFormSnapshot(env.DB, home.id),
-    getTeamFormSnapshot(env.DB, away.id),
+  const [homeForm, awayForm, homeLineup, awayLineup, staff] = await Promise.all([
+    getTeamFormSnapshot(env.DB, home.id, 6, match.tournament_id),
+    getTeamFormSnapshot(env.DB, away.id, 6, match.tournament_id),
     loadLineupFeaturesForTeam(env.DB, match.id, home.id),
     loadLineupFeaturesForTeam(env.DB, match.id, away.id),
+    loadStaffFeaturesForMatch(
+      env,
+      match.id,
+      match.tournament_id,
+      home.id,
+      away.id,
+      home.country_code,
+      away.country_code,
+    ),
   ]);
 
   const features = buildMatchFeatures(match, home, away, tournamentYear, {
@@ -130,11 +146,19 @@ export async function buildMatchFeaturesWithForm(
 
   if (homeLineup) features.homeLineup = homeLineup;
   if (awayLineup) features.awayLineup = awayLineup;
+  if (staff.homeCoach) features.homeCoach = staff.homeCoach;
+  if (staff.awayCoach) features.awayCoach = staff.awayCoach;
+  if (staff.referee) features.referee = staff.referee;
 
   const lineupConfidence =
     (homeLineup ? 0.04 : 0) + (awayLineup ? 0.04 : 0);
-  if (lineupConfidence > 0) {
-    features.sourceConfidence = Math.min(0.98, features.sourceConfidence + lineupConfidence);
+  const staffConfidence =
+    (staff.homeCoach ? 0.02 : 0) + (staff.awayCoach ? 0.02 : 0) + (staff.referee ? 0.015 : 0);
+  if (lineupConfidence + staffConfidence > 0) {
+    features.sourceConfidence = Math.min(
+      0.98,
+      features.sourceConfidence + lineupConfidence + staffConfidence,
+    );
   }
 
   return features;

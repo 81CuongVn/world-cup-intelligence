@@ -1,5 +1,6 @@
 import { pctCompact } from '../../lib/format';
 import { useI18n } from '../../lib/i18n/I18nContext';
+import { DataKindMark } from '../ui/DataKindBadge';
 
 type Props = {
   homeWin?: number;
@@ -25,8 +26,9 @@ export function CompactMatchProb({ homeWin, draw, awayWin }: Props) {
   return (
     <span
       className="inline-flex shrink-0 items-center gap-0.5 font-mono-data text-[10px] tabular-nums leading-none sm:text-[11px]"
-      title={`${t('common.abbrHome')} ${pctCompact(homeWin)} · ${t('common.abbrDraw')} ${pctCompact(draw)} · ${t('common.abbrAway')} ${pctCompact(awayWin)}`}
+      title={`${t('dataKind.predicted')}: ${t('common.abbrHome')} ${pctCompact(homeWin)} · ${t('common.abbrDraw')} ${pctCompact(draw)} · ${t('common.abbrAway')} ${pctCompact(awayWin)}`}
     >
+      <DataKindMark className="text-[9px] sm:text-[10px]" />
       <span className="text-cyan">{pctCompact(homeWin)}</span>
       <span className="text-muted/60">·</span>
       <span className="text-foreground/75">{pctCompact(draw)}</span>

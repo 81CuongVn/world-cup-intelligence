@@ -1,0 +1,114 @@
+import { FIFA_API_BASE, WC2026_COMPETITION_ID } from './constants';
+
+export type FifaCalendarMatch = {
+  IdMatch: string;
+  IdCompetition: string;
+  MatchNumber: number | null;
+  Date: string;
+  MatchTime: string | null;
+  MatchStatus: number;
+  Period?: number | null;
+  HomeTeamScore: number | null;
+  AwayTeamScore: number | null;
+  Home: { TeamName?: { Locale?: string; Description?: string }[]; IdCountry?: string };
+  Away: { TeamName?: { Locale?: string; Description?: string }[]; IdCountry?: string };
+  BallPossession?: { OverallHome?: number; OverallAway?: number } | null;
+};
+
+export type FifaMatchInfo = FifaCalendarMatch & {
+  HomeTeam?: FifaSideDetail;
+  AwayTeam?: FifaSideDetail;
+  Attendance?: string | null;
+  Officials?: FifaOfficial[];
+};
+
+type FifaSideDetail = {
+  Score?: number | null;
+  IdTeam?: string;
+  IdCountry?: string;
+  Tactics?: string | null;
+  TeamName?: { Locale?: string; Description?: string }[];
+  Goals?: FifaGoal[];
+  Bookings?: FifaBooking[];
+  Substitutions?: FifaSubstitution[];
+  Players?: FifaPlayer[];
+};
+
+type FifaGoal = {
+  IdPlayer?: string;
+  IdTeam?: string;
+  Minute?: string;
+  Period?: number;
+  Type?: number;
+  IdAssistPlayer?: string | null;
+};
+
+type FifaBooking = {
+  IdPlayer?: string | null;
+  IdCoach?: string | null;
+  IdTeam?: string;
+  Minute?: string;
+  Period?: number;
+  Card?: number;
+};
+
+type FifaSubstitution = {
+  IdPlayer?: string;
+  IdSubstitute?: string;
+  IdTeam?: string;
+  Minute?: string;
+  Period?: number;
+};
+
+type FifaPlayer = {
+  IdPlayer?: string;
+  ShirtNumber?: number;
+  PlayerName?: { Locale?: string; Description?: string }[];
+  Status?: number;
+};
+
+type FifaOfficial = {
+  OfficialType?: number;
+  Name?: { Locale?: string; Description?: string }[];
+  IdCountry?: string;
+};
+
+type CalendarResponse = { Results?: FifaCalendarMatch[] | null };
+
+const DEFAULT_HEADERS = {
+  Accept: 'application/json',
+  'User-Agent': 'wc-tactical-platform/1.0 (FIFA Match Centre sync)',
+};
+
+async function fifaFetch<T>(path: string): Promise<T | null> {
+  const res = await fetch(`${FIFA_API_BASE}/${path}`, {
+    headers: DEFAULT_HEADERS,
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!res.ok) return null;
+  const text = await res.text();
+  if (!text || text === 'null') return null;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchFifaCalendarMatches(fromIso: string, toIso: string): Promise<FifaCalendarMatch[]> {
+  const params = new URLSearchParams({
+    from: fromIso,
+    to: toIso,
+    count: '500',
+    language: 'en',
+  });
+  const data = await fifaFetch<CalendarResponse>(`calendar/matches?${params}`);
+  return (data?.Results ?? []).filter((m) => m.IdCompetition === WC2026_COMPETITION_ID);
+}
+
+export async function fetchFifaMatchInfo(fifaMatchId: string): Promise<FifaMatchInfo | null> {
+  const params = new URLSearchParams({ idMatch: fifaMatchId, language: 'en' });
+  return fifaFetch<FifaMatchInfo>(`live/football/getMatchInfo?${params}`);
+}
+
+export type { FifaGoal, FifaBooking, FifaSubstitution, FifaPlayer, FifaSideDetail };

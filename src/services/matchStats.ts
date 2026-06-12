@@ -1,5 +1,10 @@
 import type { AppEnv } from '../env';
+import { parseEnv } from '../env';
 import { resolveMatchRef } from './matchRef';
+import {
+  shouldSyncFifaMatch,
+  syncFifaMatchByRef,
+} from '../ingestion/fifa/fifaLiveSync';
 
 export type TeamMatchStatsRow = {
   teamId: string;
@@ -20,7 +25,7 @@ export type MatchStatsPayload = {
   homeScore: number;
   awayScore: number;
   updatedAt: string | null;
-  dataSource: 'recorded' | 'unavailable';
+  dataSource: 'recorded' | 'unavailable' | 'fifa_live';
   home: TeamMatchStatsRow;
   away: TeamMatchStatsRow;
   events: {
@@ -30,6 +35,7 @@ export type MatchStatsPayload = {
     substitutions: number;
   };
   xgEstimateNote: string;
+  dataSourceLabel?: string;
 };
 
 export async function getMatchStats(env: AppEnv, ref: string): Promise<MatchStatsPayload | null> {
@@ -37,6 +43,12 @@ export async function getMatchStats(env: AppEnv, ref: string): Promise<MatchStat
   if (!resolved) return null;
 
   const matchId = resolved.id;
+
+  if (parseEnv(env).fifaLiveEnabled || !parseEnv(env).mockSources) {
+    if (await shouldSyncFifaMatch(env, matchId, resolved.status)) {
+      await syncFifaMatchByRef(env, matchId).catch(() => undefined);
+    }
+  }
 
   const [homeTeam, awayTeam, statsRows, eventCounts, matchRow] = await Promise.all([
     env.DB.prepare('SELECT id, name FROM teams WHERE id = ?')
@@ -90,6 +102,12 @@ export async function getMatchStats(env: AppEnv, ref: string): Promise<MatchStat
   const homeStats = statsByTeam.get(resolved.home_team_id);
   const awayStats = statsByTeam.get(resolved.away_team_id);
   const hasStats = !!(homeStats || awayStats);
+  const hasRecap = await env.DB.prepare('SELECT 1 FROM match_recaps WHERE match_id = ? LIMIT 1')
+    .bind(matchId)
+    .first();
+
+  const dataSourceLabel =
+    hasRecap && hasStats ? 'FIFA Match Centre / Opta' : hasStats ? 'FIFA Match Centre' : undefined;
 
   const mapSide = (
     team: { id: string; name: string } | null,
@@ -118,7 +136,7 @@ export async function getMatchStats(env: AppEnv, ref: string): Promise<MatchStat
     homeScore: matchRow?.home_score ?? resolved.home_score,
     awayScore: matchRow?.away_score ?? resolved.away_score,
     updatedAt: latestStatAt ?? matchRow?.updated_at ?? null,
-    dataSource: hasStats ? 'recorded' : 'unavailable',
+    dataSource: hasStats ? 'fifa_live' : 'unavailable',
     home: mapSide(homeTeam, homeStats),
     away: mapSide(awayTeam, awayStats),
     events: {
@@ -127,6 +145,9 @@ export async function getMatchStats(env: AppEnv, ref: string): Promise<MatchStat
       redCards: eventCounts?.red_cards ?? 0,
       substitutions: eventCounts?.substitutions ?? 0,
     },
-    xgEstimateNote: 'xG ước tính bởi PitchIntel',
+    xgEstimateNote: hasRecap
+      ? 'xG theo Opta/FIFA Match Centre'
+      : 'xG ước tính bởi PitchIntel',
+    dataSourceLabel,
   };
 }

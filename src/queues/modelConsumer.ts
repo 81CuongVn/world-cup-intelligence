@@ -12,6 +12,7 @@ import { runScenarioBacktest } from '../models/scenarios/backtesting/scenarioBac
 import { generateTacticalBriefing } from '../ai/tacticalBriefing';
 import { runMultiVariableAnalysis } from '../ai/multiVariableAnalysis';
 import { extractEntitiesFromArticle } from '../ai/entityExtraction';
+import { processNewsDocumentImpact } from '../services/newsMatchImpact';
 import { parseEnv } from '../env';
 import * as probabilityRepo from '../db/repositories/probabilityRepo';
 
@@ -103,6 +104,12 @@ export async function handleModelBatch(batch: MessageBatch<ModelJob>, env: AppEn
                 .bind(JSON.stringify(entities), msg.body.documentId)
                 .run();
             }
+            await processNewsDocumentImpact(
+              env,
+              msg.body.documentId,
+              msg.body.content,
+              entities,
+            );
           }
           break;
         }
