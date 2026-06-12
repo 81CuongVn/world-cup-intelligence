@@ -324,24 +324,44 @@ function GroupStagePanel({
 
 type Props = {
   matches: ScheduleMatch[];
+  initialStandings?: GroupStandingsPayload | null;
+  initialProbs?: MatchProbMap;
 };
 
-export function GroupStageBoard({ matches }: Props) {
+export function GroupStageBoard({
+  matches,
+  initialStandings = null,
+  initialProbs = {},
+}: Props) {
   const { t } = useI18n();
+  const hasInitialBoard = !!initialStandings;
+  const hasInitialProbs = Object.keys(initialProbs).length > 0;
   const [mainTab, setMainTab] = useState<MainTab>('group');
   const [knockoutStage, setKnockoutStage] = useState<KnockoutStage>('Round of 32');
-  const [standings, setStandings] = useState<GroupStandingsPayload | null>(null);
+  const [standings, setStandings] = useState<GroupStandingsPayload | null>(initialStandings);
   const [standingsError, setStandingsError] = useState(false);
-  const [probs, setProbs] = useState<MatchProbMap>({});
-  const [groupLoading, setGroupLoading] = useState(false);
+  const [probs, setProbs] = useState<MatchProbMap>(initialProbs);
+  const [groupLoading, setGroupLoading] = useState(!hasInitialBoard);
   const [knockoutLoading, setKnockoutLoading] = useState(false);
 
   useEffect(() => {
-    if (mainTab !== 'group') return;
-    let cancelled = false;
-    setGroupLoading(true);
+    if (initialStandings) {
+      setStandings(initialStandings);
+      setStandingsError(false);
+      setGroupLoading(false);
+    }
+    if (hasInitialProbs) {
+      setProbs(initialProbs);
+    }
+  }, [initialStandings, initialProbs, hasInitialProbs]);
 
-    const load = () => {
+  useEffect(() => {
+    if (mainTab !== 'group' || hasInitialBoard) return;
+    let cancelled = false;
+
+    const load = (showLoading: boolean) => {
+      if (showLoading) setGroupLoading(true);
+
       Promise.all([api.tournamentStandings(2026), api.tournamentMatchProbabilities(2026)])
         .then(([s, p]) => {
           if (!cancelled) {
@@ -352,8 +372,10 @@ export function GroupStageBoard({ matches }: Props) {
         })
         .catch(() => {
           if (!cancelled) {
-            setStandings(null);
-            setStandingsError(true);
+            setStandings((current) => {
+              if (!current) setStandingsError(true);
+              return current;
+            });
           }
         })
         .finally(() => {
@@ -361,13 +383,13 @@ export function GroupStageBoard({ matches }: Props) {
         });
     };
 
-    load();
-    const timer = setInterval(load, 30_000);
+    load(!hasInitialBoard);
+    const timer = setInterval(() => load(false), 30_000);
     return () => {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [mainTab]);
+  }, [mainTab, hasInitialBoard]);
 
   useEffect(() => {
     if (mainTab !== 'knockout') return;

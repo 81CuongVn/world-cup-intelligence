@@ -54,25 +54,37 @@ describe('matchLifecycle', () => {
 describe('group standings sort', () => {
   it('ranks by points then goal difference', async () => {
     const { computeGroupStandings } = await import('../src/services/tournamentProgression');
-    let call = 0;
     const db = {
       prepare: () => ({
         bind: () => ({
-          all: async () => {
-            call += 1;
-            if (call === 1) {
-              return {
-                results: [{ team_id: 't1' }, { team_id: 't2' }, { team_id: 't3' }],
-              };
-            }
-            return {
-              results: [
-                { home_team_id: 't1', away_team_id: 't2', home_score: 2, away_score: 0 },
-                { home_team_id: 't3', away_team_id: 't1', home_score: 1, away_score: 1 },
-                { home_team_id: 't2', away_team_id: 't3', home_score: 0, away_score: 3 },
-              ],
-            };
-          },
+          all: async () => ({
+            results: [
+              {
+                group_code: 'A',
+                home_team_id: 't1',
+                away_team_id: 't2',
+                home_score: 2,
+                away_score: 0,
+                status: 'completed',
+              },
+              {
+                group_code: 'A',
+                home_team_id: 't3',
+                away_team_id: 't1',
+                home_score: 1,
+                away_score: 1,
+                status: 'completed',
+              },
+              {
+                group_code: 'A',
+                home_team_id: 't2',
+                away_team_id: 't3',
+                home_score: 0,
+                away_score: 3,
+                status: 'completed',
+              },
+            ],
+          }),
         }),
       }),
     } as unknown as D1Database;
@@ -86,24 +98,29 @@ describe('group standings sort', () => {
 
   it('seeds four teams with zero stats before results', async () => {
     const { computeGroupStandings } = await import('../src/services/tournamentProgression');
-    let call = 0;
     const db = {
       prepare: () => ({
         bind: () => ({
-          all: async () => {
-            call += 1;
-            if (call === 1) {
-              return {
-                results: [
-                  { team_id: 't-usa' },
-                  { team_id: 't-mex' },
-                  { team_id: 't-can' },
-                  { team_id: 't-bra' },
-                ],
-              };
-            }
-            return { results: [] };
-          },
+          all: async () => ({
+            results: [
+              {
+                group_code: 'A',
+                home_team_id: 't-usa',
+                away_team_id: 't-mex',
+                home_score: 0,
+                away_score: 0,
+                status: 'scheduled',
+              },
+              {
+                group_code: 'A',
+                home_team_id: 't-can',
+                away_team_id: 't-bra',
+                home_score: 0,
+                away_score: 0,
+                status: 'scheduled',
+              },
+            ],
+          }),
         }),
       }),
     } as unknown as D1Database;

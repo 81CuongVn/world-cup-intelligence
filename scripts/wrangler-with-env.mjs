@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const tokenPath = resolve(root, 'cf-deploy.token');
 
-if (!process.env.CLOUDFLARE_API_TOKEN?.trim() && existsSync(tokenPath)) {
+// cf-deploy.token wins over a stale shell CLOUDFLARE_API_TOKEN
+if (existsSync(tokenPath)) {
   process.env.CLOUDFLARE_API_TOKEN = readFileSync(tokenPath, 'utf8').trim();
 }
 

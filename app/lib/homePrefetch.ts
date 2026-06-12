@@ -1,4 +1,4 @@
-import type { DashboardData, NewsArticle, ScheduleMatch } from './api';
+import type { DashboardData, GroupStandingsPayload, NewsArticle, ScheduleMatch } from './api';
 
 export type HomePayload = {
   data: {
@@ -14,6 +14,8 @@ export type HomePayload = {
     };
     dashboard: DashboardData;
     hotNews: NewsArticle[];
+    standings: GroupStandingsPayload;
+    matchProbabilities: Record<string, { homeWin: number; draw: number; awayWin: number }>;
   };
 };
 

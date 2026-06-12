@@ -1,8 +1,9 @@
 import type { AppEnv } from '../env';
 import { WC2026_TOURNAMENT_ID } from '../constants/tournament';
 import {
-  computeGroupStandings,
+  computeGroupStandingsFromMatchRows,
   type GroupStanding,
+  type GroupStageMatchRow,
 } from './tournamentProgression';
 
 export type StandingRow = GroupStanding & {
@@ -26,19 +27,6 @@ export type GroupStandingsPayload = {
 };
 
 const GROUP_CODES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const;
-
-async function isGroupComplete(db: D1Database, groupCode: string): Promise<boolean> {
-  const row = await db
-    .prepare(
-      `SELECT COUNT(*) AS total,
-              SUM(CASE WHEN status IN ('completed', 'finished') THEN 1 ELSE 0 END) AS done
-       FROM matches
-       WHERE tournament_id = ? AND stage = 'Group' AND group_code = ?`,
-    )
-    .bind(WC2026_TOURNAMENT_ID, groupCode)
-    .first<{ total: number; done: number }>();
-  return !!row && row.total > 0 && row.total === row.done;
-}
 
 function compareStandings(a: GroupStanding, b: GroupStanding): number {
   if (b.points !== a.points) return b.points - a.points;
@@ -66,27 +54,50 @@ export function sortStandingRows(rows: StandingRow[]): StandingRow[] {
 }
 
 export async function buildGroupStandingsPayload(env: AppEnv): Promise<GroupStandingsPayload> {
+  const [matchesResult, completionResult, teamsResult] = await Promise.all([
+    env.DB.prepare(
+      `SELECT group_code, home_team_id, away_team_id, home_score, away_score, status
+       FROM matches
+       WHERE tournament_id = ? AND stage = 'Group'`,
+    )
+      .bind(WC2026_TOURNAMENT_ID)
+      .all<GroupStageMatchRow>(),
+    env.DB.prepare(
+      `SELECT group_code,
+              COUNT(*) AS total,
+              SUM(CASE WHEN status IN ('completed', 'finished') THEN 1 ELSE 0 END) AS done
+       FROM matches
+       WHERE tournament_id = ? AND stage = 'Group'
+       GROUP BY group_code`,
+    )
+      .bind(WC2026_TOURNAMENT_ID)
+      .all<{ group_code: string; total: number; done: number }>(),
+    env.DB.prepare(
+      `SELECT id, name, short_name, country_code FROM teams WHERE id LIKE 'team-w26-%'`,
+    ).all<{ id: string; name: string; short_name: string | null; country_code: string | null }>(),
+  ]);
+
+  const allMatches = matchesResult.results ?? [];
+  const completionMap = new Map(
+    (completionResult.results ?? []).map((r) => [
+      r.group_code,
+      r.total > 0 && r.total === r.done,
+    ]),
+  );
+  const nameMap = new Map(
+    (teamsResult.results ?? []).map((t) => [
+      t.id,
+      { name: t.name, short: t.short_name, countryCode: t.country_code },
+    ]),
+  );
+
   const groups: GroupStandingsPayload['groups'] = {};
   const thirdPlaceCandidates: Array<StandingRow & { group: string }> = [];
 
   for (const code of GROUP_CODES) {
-    const raw = await computeGroupStandings(env.DB, code);
-    const teamIds = raw.map((r) => r.teamId);
-    const nameMap = new Map<string, { name: string; short: string | null; countryCode: string | null }>();
+    const raw = computeGroupStandingsFromMatchRows(allMatches, code);
+    const complete = completionMap.get(code) ?? false;
 
-    if (teamIds.length) {
-      const placeholders = teamIds.map(() => '?').join(',');
-      const { results } = await env.DB.prepare(
-        `SELECT id, name, short_name, country_code FROM teams WHERE id IN (${placeholders})`,
-      )
-        .bind(...teamIds)
-        .all<{ id: string; name: string; short_name: string | null; country_code: string | null }>();
-      for (const t of results ?? []) {
-        nameMap.set(t.id, { name: t.name, short: t.short_name, countryCode: t.country_code });
-      }
-    }
-
-    const complete = await isGroupComplete(env.DB, code);
     const rows: StandingRow[] = raw.map((row) => {
       const names = nameMap.get(row.teamId);
       return {

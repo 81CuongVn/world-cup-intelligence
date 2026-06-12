@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { computeGroupStandingsFromMatchRows } from '../src/services/tournamentProgression';
 import { sortStandingRows, type StandingRow } from '../src/services/tournamentStandings';
 
 function row(
@@ -20,6 +21,35 @@ function row(
     gd,
   };
 }
+
+describe('computeGroupStandingsFromMatchRows', () => {
+  it('aggregates completed group matches in memory', () => {
+    const standings = computeGroupStandingsFromMatchRows(
+      [
+        {
+          group_code: 'A',
+          home_team_id: 't-mex',
+          away_team_id: 't-rsa',
+          home_score: 2,
+          away_score: 0,
+          status: 'completed',
+        },
+        {
+          group_code: 'B',
+          home_team_id: 't-usa',
+          away_team_id: 't-can',
+          home_score: 1,
+          away_score: 1,
+          status: 'completed',
+        },
+      ],
+      'A',
+    );
+    expect(standings.find((r) => r.teamId === 't-mex')?.points).toBe(3);
+    expect(standings.find((r) => r.teamId === 't-rsa')?.points).toBe(0);
+    expect(standings).toHaveLength(2);
+  });
+});
 
 describe('sortStandingRows', () => {
   it('sorts alphabetically when no matches played', () => {

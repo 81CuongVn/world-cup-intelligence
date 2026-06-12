@@ -1,9 +1,12 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../env';
+import { WC2026_TOURNAMENT_ID } from '../constants/tournament';
 import { ensureNewsCrawlFresh, ensurePipelineFresh } from '../services/pipelineBootstrap';
 import { buildDashboardPayload } from '../services/dashboardPayload';
 import { buildSchedulePayload } from '../services/schedulePayload';
 import { fetchHotNewsArticles } from '../services/newsListPayload';
+import { buildGroupStandingsPayload } from '../services/tournamentStandings';
+import { buildTournamentMatchProbabilitiesPayload } from '../services/tournamentMatchProbabilities';
 
 export const homeRoutes = new Hono<{ Bindings: AppEnv }>();
 
@@ -17,11 +20,23 @@ homeRoutes.get('/', async (c) => {
   );
 
   const tournament = c.req.query('tournament') ?? 't-2026';
-  const [schedule, dashboard, hot] = await Promise.all([
+  const [schedule, dashboard, hot, standings, matchProbabilities] = await Promise.all([
     buildSchedulePayload(c.env, tournament),
     buildDashboardPayload(c.env),
     fetchHotNewsArticles(c.env, 3),
+    buildGroupStandingsPayload(c.env),
+    buildTournamentMatchProbabilitiesPayload(c.env, WC2026_TOURNAMENT_ID, {
+      scheduleBackgroundFill: false,
+    }),
   ]);
+
+  if (matchProbabilities.meta.missingIds.length > 0) {
+    c.executionCtx.waitUntil(
+      import('../services/tournamentMatchProbabilities').then(({ persistMissingTournamentProbabilities }) =>
+        persistMissingTournamentProbabilities(c.env, matchProbabilities.meta.missingIds).catch(() => undefined),
+      ),
+    );
+  }
 
   return c.json(
     {
@@ -30,6 +45,8 @@ homeRoutes.get('/', async (c) => {
         scheduleMeta: schedule.meta,
         dashboard,
         hotNews: hot,
+        standings,
+        matchProbabilities: matchProbabilities.data,
       },
     },
     200,

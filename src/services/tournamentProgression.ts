@@ -87,21 +87,23 @@ export type GroupStanding = {
   gd: number;
 };
 
-export async function computeGroupStandings(
-  db: D1Database,
-  groupCode: string,
-): Promise<GroupStanding[]> {
-  const { results: rosterRows } = await db
-    .prepare(
-      `SELECT home_team_id AS team_id FROM matches
-       WHERE tournament_id = ? AND stage = 'Group' AND group_code = ?
-       UNION
-       SELECT away_team_id FROM matches
-       WHERE tournament_id = ? AND stage = 'Group' AND group_code = ?`,
-    )
-    .bind(WC2026_TOURNAMENT_ID, groupCode, WC2026_TOURNAMENT_ID, groupCode)
-    .all<{ team_id: string }>();
+export type GroupStageMatchRow = {
+  group_code: string;
+  home_team_id: string;
+  away_team_id: string;
+  home_score: number;
+  away_score: number;
+  status: string;
+};
 
+const SCORED_STATUSES = new Set(['completed', 'finished', 'live']);
+
+/** Pure standings from pre-fetched group-stage rows (no D1 round-trips). */
+export function computeGroupStandingsFromMatchRows(
+  rows: GroupStageMatchRow[],
+  groupCode: string,
+): GroupStanding[] {
+  const groupRows = rows.filter((r) => r.group_code === groupCode);
   const stats = new Map<string, GroupStanding>();
 
   const ensure = (teamId: string): GroupStanding => {
@@ -113,26 +115,13 @@ export async function computeGroupStandings(
     return row;
   };
 
-  for (const { team_id } of rosterRows ?? []) {
-    ensure(team_id);
+  for (const m of groupRows) {
+    ensure(m.home_team_id);
+    ensure(m.away_team_id);
   }
 
-  const { results } = await db
-    .prepare(
-      `SELECT home_team_id, away_team_id, home_score, away_score
-       FROM matches
-       WHERE tournament_id = ? AND stage = 'Group' AND group_code = ?
-         AND status IN ('completed', 'finished', 'live')`,
-    )
-    .bind(WC2026_TOURNAMENT_ID, groupCode)
-    .all<{
-      home_team_id: string;
-      away_team_id: string;
-      home_score: number;
-      away_score: number;
-    }>();
-
-  for (const m of results ?? []) {
+  for (const m of groupRows) {
+    if (!SCORED_STATUSES.has(m.status)) continue;
     const home = ensure(m.home_team_id);
     const away = ensure(m.away_team_id);
     home.played += 1;
@@ -157,6 +146,22 @@ export async function computeGroupStandings(
   }
 
   return [...stats.values()].sort(compareStandings);
+}
+
+export async function computeGroupStandings(
+  db: D1Database,
+  groupCode: string,
+): Promise<GroupStanding[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT group_code, home_team_id, away_team_id, home_score, away_score, status
+       FROM matches
+       WHERE tournament_id = ? AND stage = 'Group' AND group_code = ?`,
+    )
+    .bind(WC2026_TOURNAMENT_ID, groupCode)
+    .all<GroupStageMatchRow>();
+
+  return computeGroupStandingsFromMatchRows(results ?? [], groupCode);
 }
 
 async function isGroupComplete(db: D1Database, groupCode: string): Promise<boolean> {

@@ -11,7 +11,6 @@ import { MatchTeamsWithFlags } from '../team/TeamNameWithFlag';
 import { CompactMatchProb } from './CompactMatchProb';
 import { MatchKickoffDisplay, ScheduleTimezoneBanner } from '../match/MatchKickoffDisplay';
 import { MatchResultScore, hasMatchResult } from '../match/MatchResultScore';
-import { MatchVersusThumbnail } from '../match/MatchVersusThumbnail';
 import { formatKickoffDateLong, getViewerTimezone, localDateKey } from '../../lib/matchKickoffDisplay';
 
 type Props = {
@@ -291,18 +290,9 @@ export function TournamentSchedulePanel({
                       <li key={m.id}>
                         <Link
                           to={resolveMatchHref(m)}
-                          className="flex h-full flex-col overflow-hidden rounded-xl border border-border/60 bg-panel2/40 text-sm transition hover:border-pressing/50 hover:bg-pressing/5"
+                          className="flex h-full flex-col rounded-xl border border-border/60 bg-panel2/40 text-sm transition hover:border-pressing/50 hover:bg-pressing/5"
                         >
-                          <MatchVersusThumbnail
-                            matchRef={m.slug ?? m.id}
-                            homeName={m.home_name}
-                            awayName={m.away_name}
-                            homeCountryCode={m.home_country_code}
-                            awayCountryCode={m.away_country_code}
-                            variant="card"
-                            className="rounded-none border-0"
-                          />
-                          <div className="flex items-start justify-between gap-2 px-3 pt-2.5">
+                          <div className="flex items-start justify-between gap-2 px-3 pt-3">
                             <span className="font-medium leading-snug">
                               <MatchTeamsWithFlags
                                 homeName={m.home_name}

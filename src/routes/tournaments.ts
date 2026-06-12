@@ -45,7 +45,7 @@ tournamentRoutes.get('/:year/standings', async (c) => {
   if (year !== 2026) return c.json({ error: 'Not found' }, 404);
   const { buildGroupStandingsPayload } = await import('../services/tournamentStandings');
   const data = await buildGroupStandingsPayload(c.env);
-  return c.json({ data });
+  return c.json({ data }, 200, { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' });
 });
 
 tournamentRoutes.get('/:year/match-probabilities', async (c) => {
