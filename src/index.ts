@@ -23,6 +23,7 @@ import type { IngestJob } from './queues/types';
 import type { ModelJob } from './queues/types';
 import { MatchRoom } from './durable-objects/MatchRoom';
 import { handleScheduledCron } from './scheduled/cron';
+import { publicApiRoutes } from './routes/publicApi';
 import { discoveryRoutes } from './routes/discovery';
 import { buildLinkHeaderValue, siteOrigin } from './services/siteDiscovery';
 import { withStaticAssetCacheHeaders } from './services/staticAssetCache';
@@ -40,7 +41,7 @@ app.use('/api/*', async (c, next) => {
     return cors({
       origin,
       allowMethods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'X-Admin-Token'],
+      allowHeaders: ['Content-Type', 'X-Admin-Token', 'X-API-Key', 'Authorization'],
     })(c, next);
   }
   return next();
@@ -60,6 +61,7 @@ app.route('/api/dashboard', dashboardRoutes);
 app.route('/api/schedule', scheduleRoutes);
 app.route('/api/news', newsRoutes);
 app.route('/api/analysis', analysisRoutes);
+app.route('/api/v1', publicApiRoutes);
 app.route('/api/admin', adminRoutes);
 
 app.route('/', discoveryRoutes);

@@ -3,7 +3,8 @@ export type IngestJob =
   | { type: 'source_ingest'; sourceId: string; idempotencyKey: string }
   | { type: 'refresh_minute'; idempotencyKey: string }
   | { type: 'crawl_news'; idempotencyKey: string }
-  | { type: 'match_complete'; matchId: string; idempotencyKey: string };
+  | { type: 'match_complete'; matchId: string; idempotencyKey: string }
+  | { type: 'webhook_deliver'; subscriptionId: string; eventId: number; idempotencyKey: string };
 
 export type ModelJob =
   | { type: 'recompute'; matchId: string }

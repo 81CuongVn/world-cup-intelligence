@@ -9,6 +9,7 @@ const links = [
   { to: '/tournaments', k: 'nav.tournaments' as const },
   { to: '/news-intelligence', k: 'nav.articles' as const },
   { to: '/guide', k: 'nav.guide' as const },
+  { to: '/docs/api', k: 'nav.api' as const, match: (p: string) => p.startsWith('/docs/api') },
 ];
 
 export function TopNav() {

@@ -17,7 +17,7 @@
       "/robots.txt",
       "/sitemap.xml",
       "/auth.md",
-      "/docs/*",
+      "/docs/api.md",
       "/oauth/*"
     ]
   },
@@ -25,10 +25,10 @@
     "ENVIRONMENT": "uat",
     "MOCK_SOURCES": "false",
     "FIFA_LIVE_ENABLED": "true",
+    "PUBLIC_API_REQUIRE_KEY": "false",
     "AI_FALLBACK_MODE": "false",
     "VECTORIZE_FALLBACK_MODE": "true",
     "AI_GATEWAY_ENABLED": "true",
-    "AI_GATEWAY_ACCOUNT_ID": "4c15704ef706b9c8954cd6f9feb678d8",
     "AI_GATEWAY_ID": "wc-tactical",
     "CORS_ORIGINS": "*"
   },
@@ -86,10 +86,10 @@
         "ENVIRONMENT": "production",
         "MOCK_SOURCES": "false",
     "FIFA_LIVE_ENABLED": "true",
+    "PUBLIC_API_REQUIRE_KEY": "true",
         "AI_FALLBACK_MODE": "false",
         "VECTORIZE_FALLBACK_MODE": "true",
         "AI_GATEWAY_ENABLED": "true",
-        "AI_GATEWAY_ACCOUNT_ID": "4c15704ef706b9c8954cd6f9feb678d8",
         "AI_GATEWAY_ID": "wc-tactical",
         "CORS_ORIGINS": "*"
       },

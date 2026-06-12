@@ -191,7 +191,10 @@ export function buildApiCatalog(origin: string): object {
         'service-desc': [
           { href: `${origin}/.well-known/openapi.json`, type: 'application/json' },
         ],
-        'service-doc': [{ href: `${origin}/docs/api`, type: 'text/markdown' }],
+        'service-doc': [
+          { href: `${origin}/docs/api`, type: 'text/html' },
+          { href: `${origin}/docs/api.md`, type: 'text/markdown' },
+        ],
         status: [{ href: `${api}/health`, type: 'application/json' }],
       },
     ],
@@ -206,8 +209,29 @@ export function buildOpenApiSpec(origin: string): object {
       version: '1.0.0',
       description: 'World Cup 2026 tactical probability and news intelligence API.',
     },
-    servers: [{ url: `${origin}/api` }],
+    servers: [{ url: `${origin}/api` }, { url: `${origin}/api/v1`, description: 'Public API v1 (integrations)' }],
     paths: {
+      '/v1/feed': {
+        get: {
+          summary: 'Delta event feed for third-party polling',
+          operationId: 'getPublicFeed',
+          parameters: [
+            { name: 'cursor', in: 'query', schema: { type: 'integer', default: 0 } },
+            { name: 'limit', in: 'query', schema: { type: 'integer', default: 50 } },
+          ],
+        },
+      },
+      '/v1/matches/{ref}/snapshot': {
+        get: {
+          summary: 'Combined match snapshot (score, stats, recap)',
+          operationId: 'getMatchSnapshot',
+          parameters: [{ name: 'ref', in: 'path', required: true, schema: { type: 'string' } }],
+        },
+      },
+      '/v1/webhooks': {
+        post: { summary: 'Register webhook (requires X-API-Key)', operationId: 'createWebhook' },
+        get: { summary: 'List webhooks', operationId: 'listWebhooks' },
+      },
       '/health': {
         get: { summary: 'Health and pipeline status', operationId: 'getHealth' },
       },
@@ -245,6 +269,28 @@ export const API_DOC_MD = `# PitchIntel API
 Base URL: \`/api\`
 
 Public **read-only** JSON endpoints. No authentication required for listed routes.
+
+## Public API v1 (third-party integrations)
+
+Base: \`/api/v1\` — continuous match updates for external apps.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | /v1 | optional | Platform overview + event types |
+| GET | /v1/feed?cursor=0 | optional | Delta event feed (poll every 5–15s live) |
+| GET | /v1/matches?since=&status= | optional | Match list with change filter |
+| GET | /v1/matches/:ref/snapshot | optional | Full match state (score, stats, recap) |
+| GET | /v1/stream?cursor=0 | optional | SSE live event stream |
+| POST | /v1/webhooks | **API key** | Register webhook URL |
+| GET | /v1/webhooks | **API key** | List your webhooks |
+| DELETE | /v1/webhooks/:id | **API key** | Remove webhook |
+| POST | /v1/webhooks/:id/test | **API key** | Send test delivery |
+
+**API key:** \`X-API-Key: pi_live_...\` (provision via \`POST /api/admin/api-clients\` with \`X-Admin-Token\`).
+
+**Webhook signature:** verify \`X-PitchIntel-Signature: sha256=<hmac>\` over raw JSON body using your webhook secret.
+
+**Event types:** \`match.score_updated\`, \`match.status_changed\`, \`match.completed\`, \`match.stats_updated\`, \`match.commentary_updated\`, \`match.events_updated\`
 
 ## Core
 
@@ -334,12 +380,13 @@ Use the public JSON API at \`/api\` (see \`/.well-known/openapi.json\`).
 
 ## Typical flow
 
-1. \`GET /api/schedule\` — list matches
-2. \`GET /api/matches/{id}/probability\` — model odds
-3. \`GET /api/matches/{id}/history\` — World Cup H2H
-4. \`GET /api/news\` — latest articles
+1. \`GET /api/v1/feed?cursor=0\` — poll live match events (5–15s)
+2. \`GET /api/v1/matches/{slug}/snapshot\` — full match state
+3. \`POST /api/v1/webhooks\` — push updates to your server (requires \`X-API-Key\`)
+4. \`GET /api/schedule\` — list matches
+5. \`GET /api/matches/{id}/probability\` — model odds
 
-No auth for read endpoints.
+Partner API keys: provision via admin \`POST /api/admin/api-clients\` with \`X-Admin-Token\`.
 `;
 
 export async function sha256Hex(text: string): Promise<string> {
@@ -472,7 +519,8 @@ export function buildLinkHeaderValue(origin: string): string {
   return [
     `<${origin}/.well-known/api-catalog>; rel="api-catalog"`,
     `<${origin}/.well-known/openapi.json>; rel="service-desc"; type="application/json"`,
-    `<${origin}/docs/api>; rel="service-doc"; type="text/markdown"`,
+    `<${origin}/docs/api>; rel="service-doc"; type="text/html"`,
+    `<${origin}/docs/api.md>; rel="service-doc"; type="text/markdown"`,
     `<${origin}/auth.md>; rel="describedby"; type="text/markdown"`,
     `<${origin}/.well-known/oauth-protected-resource>; rel="oauth-protected-resource"; type="application/json"`,
     `<${origin}/sitemap.xml>; rel="sitemap"; type="application/xml"`,

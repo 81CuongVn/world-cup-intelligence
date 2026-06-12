@@ -17,4 +17,4 @@
   Cache-Control: no-cache
 
 /
-  Link: </.well-known/api-catalog>; rel="api-catalog", </.well-known/openapi.json>; rel="service-desc"; type="application/json", </docs/api>; rel="service-doc"; type="text/markdown", </auth.md>; rel="describedby"; type="text/markdown", </.well-known/oauth-protected-resource>; rel="oauth-protected-resource"; type="application/json", </sitemap.xml>; rel="sitemap"; type="application/xml", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"
+  Link: </.well-known/api-catalog>; rel="api-catalog", </.well-known/openapi.json>; rel="service-desc"; type="application/json", </docs/api>; rel="service-doc"; type="text/html", </docs/api.md>; rel="service-doc"; type="text/markdown", </auth.md>; rel="describedby"; type="text/markdown", </.well-known/oauth-protected-resource>; rel="oauth-protected-resource"; type="application/json", </sitemap.xml>; rel="sitemap"; type="application/xml", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"

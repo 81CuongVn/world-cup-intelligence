@@ -349,8 +349,12 @@ npx wrangler dev --remote --port 8787
 
 ```bash
 npx wrangler secret put OPENAI_API_KEY
+npx wrangler secret put AI_GATEWAY_ACCOUNT_ID   # Cloudflare account ID (không commit vào repo)
 npx wrangler secret put ADMIN_TOKEN   # bắt buộc cho POST /api/admin trên production
 ```
+
+Chạy lại `AI_GATEWAY_ACCOUNT_ID` cho production: `npx wrangler secret put AI_GATEWAY_ACCOUNT_ID --env production`.
+Local dev: đặt `AI_GATEWAY_ACCOUNT_ID` trong `.dev.vars` (xem `.env.example`).
 
 `ADMIN_TOKEN` **không có sẵn** — bạn tự đặt chuỗi bí mật khi chạy lệnh trên. Dùng cùng giá trị làm header:
 

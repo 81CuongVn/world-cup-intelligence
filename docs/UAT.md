@@ -15,12 +15,12 @@
 
 ## Cloudflare Access (chặn UAT)
 
-Chỉ cho phép `sycu.lee@gmail.com`:
+Chỉ cho phép email admin (thay `<your-email>` bằng địa chỉ thật — không commit email vào repo):
 
 1. Cloudflare Dashboard → **Zero Trust** → **Access** → **Applications**
 2. **Add application** → Self-hosted
 3. Domain: `wc-tactical-uat.sycu-lee.workers.dev` (hoặc `uat.wcstat.orangecloud.vn`)
-4. Policy: **Allow** → Email → `sycu.lee@gmail.com`
+4. Policy: **Allow** → Email → `<your-email>`
 5. Lưu và thử trên cửa sổ ẩn danh
 
 ## Lệnh thường dùng
@@ -52,7 +52,7 @@ npm run deploy:production   # production — chỉ sau khi UAT pass
 
 | Binding | Tài nguyên |
 |---------|------------|
-| D1 `DB` | `wc-tactical-db-uat` (`956310d8-5ca1-49db-b188-7d0b435109ce`) |
-| KV `KV` | `413d9f3be91046c883fb42fc5c99b0d7` |
+| D1 `DB` | `wc-tactical-db-uat` (ID trong `wrangler.jsonc`, không copy ra docs) |
+| KV `KV` | namespace UAT (ID trong `wrangler.jsonc`) |
 | R2 | `wc-tactical-*-uat` |
 | Queues | `wc-*-queue-uat` |

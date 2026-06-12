@@ -1,4 +1,6 @@
 export const FIFA_API_BASE = 'https://api.fifa.com/api/v3';
+export const FIFA_CXM_API_BASE = 'https://cxm-api.fifa.com/fifaplusweb/api';
+export const FIFA_GAMEDAY_API_BASE = 'https://gameday-prod.fifa.mangodev.co.uk/1-0';
 export const WC2026_COMPETITION_ID = '17';
 export const WC2026_SEASON_ID = '285023';
 export const WC2026_TOURNAMENT_ID = 't-2026';

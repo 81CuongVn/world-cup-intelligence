@@ -185,7 +185,7 @@ async function main() {
 
   if (inserted > 0) {
     const kvCmd =
-      `npx wrangler kv key put bulk_recompute_wc2026 "statsbomb-pull-script" --namespace-id=fe99c19c60a542ea9771111b5ae050da ${flag}`.trim();
+      `npx wrangler kv key put bulk_recompute_wc2026 "statsbomb-pull-script" --binding=KV --env=production ${flag}`.trim();
     console.log('Scheduling WC 2026 bulk recompute...');
     execSync(kvCmd, { cwd: root, stdio: 'inherit' });
   }

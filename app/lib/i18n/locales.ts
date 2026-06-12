@@ -7,6 +7,7 @@ export type LocaleKey =
   | 'nav.signals'
   | 'nav.probabilitySignals'
   | 'nav.guide'
+  | 'nav.api'
   | 'matches.pageTitle'
   | 'matches.pageSubtitle'
   | 'matches.pageSubtitleCompact'
@@ -486,6 +487,7 @@ export const messages: Record<LocaleKey, { vi: string; en: string }> = {
   'nav.signals': { vi: 'Tín hiệu', en: 'Signals' },
   'nav.probabilitySignals': { vi: 'Tín hiệu xác suất', en: 'Probability Signals' },
   'nav.guide': { vi: 'Hướng dẫn', en: 'Guide' },
+  'nav.api': { vi: 'API', en: 'API' },
   'matches.pageTitle': { vi: 'Lịch thi đấu', en: 'Match schedule' },
   'matches.pageSubtitle': {
     vi: 'Trận đang diễn ra hoặc sắp đá ở trên — toàn bộ lịch World Cup 2026 bên dưới.',

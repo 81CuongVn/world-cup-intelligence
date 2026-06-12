@@ -54,7 +54,7 @@ discoveryRoutes.get('/.well-known/openapi.json', (c) => {
   });
 });
 
-discoveryRoutes.get('/docs/api', (c) => {
+discoveryRoutes.get('/docs/api.md', (c) => {
   return c.text(API_DOC_MD, 200, {
     'Content-Type': 'text/markdown; charset=utf-8',
     'Cache-Control': 'public, max-age=86400',

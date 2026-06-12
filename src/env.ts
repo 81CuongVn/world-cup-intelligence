@@ -10,6 +10,7 @@ export type AppEnv = {
   OPENAI_API_KEY?: string;
   CF_AIG_TOKEN?: string;
   ADMIN_TOKEN?: string;
+  PUBLIC_API_REQUIRE_KEY?: string;
   CORS_ORIGINS: string;
   DB: D1Database;
   KV: KVNamespace;
@@ -37,6 +38,7 @@ export function parseEnv(env: AppEnv) {
     openaiApiKey: env.OPENAI_API_KEY,
     cfAigToken: env.CF_AIG_TOKEN,
     adminToken: env.ADMIN_TOKEN,
+    publicApiRequireKey: env.PUBLIC_API_REQUIRE_KEY === 'true',
     corsOrigins: (env.CORS_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
   };
 }

@@ -19,7 +19,16 @@ import {
   periodLabel,
   resolveFifaPlatformStatus,
 } from './parse';
+import {
+  syncFifaMatchBlogAndStats,
+  shouldSyncFifaBlogAndStats,
+} from './fifaLiveBlogSync';
 import { FIFA_SOURCE_ID, WC2026_TOURNAMENT_ID } from './constants';
+import {
+  emitMatchCompleted,
+  emitMatchScoreUpdate,
+  emitMatchStatusChange,
+} from '../../services/publicApi/emitter';
 
 export type FifaSyncResult = {
   updatedIds: string[];
@@ -228,7 +237,7 @@ async function syncTeamStats(
 }
 
 async function applyFifaPayload(
-  db: D1Database,
+  env: AppEnv,
   internal: MatchRow,
   payload: FifaMatchInfo,
 ): Promise<'updated' | 'completed' | 'unchanged'> {
@@ -244,7 +253,7 @@ async function applyFifaPayload(
     (homeScore ?? 0) !== (internal.home_score ?? 0) ||
     (awayScore ?? 0) !== (internal.away_score ?? 0);
 
-  await db
+  await env.DB
     .prepare(
       `UPDATE matches SET
          status = ?, minute = ?, home_score = ?, away_score = ?,
@@ -255,10 +264,58 @@ async function applyFifaPayload(
     .bind(status, minute, homeScore ?? 0, awayScore ?? 0, payload.IdMatch, now, internal.id)
     .run();
 
-  await syncMatchEvents(db, internal.id, internal.home_team_id, internal.away_team_id, payload);
-  await syncTeamStats(db, internal.id, internal.home_team_id, internal.away_team_id, payload);
+  await syncMatchEvents(env.DB, internal.id, internal.home_team_id, internal.away_team_id, payload);
+  await syncTeamStats(env.DB, internal.id, internal.home_team_id, internal.away_team_id, payload);
 
-  if (status === 'completed') return 'completed';
+  const platformStatus = resolveFifaPlatformStatus(payload);
+  if (
+    (platformStatus === 'live' || platformStatus === 'completed') &&
+    (await shouldSyncFifaBlogAndStats(env, internal.id, platformStatus))
+  ) {
+    try {
+      await syncFifaMatchBlogAndStats(
+        env,
+        internal.id,
+        internal.home_team_id,
+        internal.away_team_id,
+        payload,
+        internal.fifa_match_id ?? payload.IdMatch,
+      );
+    } catch (e) {
+      logError('fifa live blog/stats sync failed', { match_id: internal.id, error: String(e) });
+    }
+  }
+
+  if (status === 'completed') {
+    if (internal.status !== 'completed') {
+      await emitMatchCompleted(env, {
+        matchId: internal.id,
+        status,
+        minute,
+        homeScore: homeScore ?? 0,
+        awayScore: awayScore ?? 0,
+        updatedAt: now,
+      }).catch(() => undefined);
+    }
+    return 'completed';
+  }
+
+  if (changed) {
+    const ctx = {
+      matchId: internal.id,
+      status,
+      minute,
+      homeScore: homeScore ?? 0,
+      awayScore: awayScore ?? 0,
+      updatedAt: now,
+    };
+    if (internal.status !== status) {
+      await emitMatchStatusChange(env, ctx).catch(() => undefined);
+    } else {
+      await emitMatchScoreUpdate(env, ctx).catch(() => undefined);
+    }
+  }
+
   return changed ? 'updated' : 'unchanged';
 }
 
@@ -341,7 +398,7 @@ export async function syncFifaWc2026Matches(env: AppEnv): Promise<FifaSyncResult
     try {
       if (needsFullFifaMatchInfo(row, platformStatus, nowMs)) {
         const info = (await fetchFifaMatchInfo(row.IdMatch)) ?? row;
-        const outcome = await applyFifaPayload(env.DB, internal, info as FifaMatchInfo);
+        const outcome = await applyFifaPayload(env, internal, info as FifaMatchInfo);
         synced += 1;
         if (outcome === 'completed') completedIds.push(internal.id);
         else if (outcome === 'updated') updatedIds.push(internal.id);
@@ -414,7 +471,21 @@ export async function syncFifaMatchByRef(env: AppEnv, internalMatchId: string): 
 
   const info = await fetchFifaMatchInfo(fifaId);
   if (!info) return false;
-  await applyFifaPayload(env.DB, match, info);
+  await applyFifaPayload(env, match, info);
+  if (match.status === 'live' || match.status === 'completed') {
+    try {
+      await syncFifaMatchBlogAndStats(
+        env,
+        match.id,
+        match.home_team_id,
+        match.away_team_id,
+        info,
+        fifaId,
+      );
+    } catch (e) {
+      logError('fifa on-demand blog sync failed', { match_id: match.id, error: String(e) });
+    }
+  }
   await env.KV.put(`meta:fifa_sync:${internalMatchId}`, nowIso(), { expirationTtl: 300 });
   return true;
 }

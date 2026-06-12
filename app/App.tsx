@@ -16,6 +16,7 @@ const NewsArticlePage = lazy(() =>
   import('./pages/NewsArticlePage').then((m) => ({ default: m.NewsArticlePage })),
 );
 const GuidePage = lazy(() => import('./pages/GuidePage').then((m) => ({ default: m.GuidePage })));
+const ApiDocsPage = lazy(() => import('./pages/ApiDocsPage').then((m) => ({ default: m.ApiDocsPage })));
 const MatchAnalysisPage = lazy(() =>
   import('./pages/MatchAnalysisPage').then((m) => ({ default: m.MatchAnalysisPage })),
 );
@@ -41,6 +42,7 @@ export default function App() {
       <BrowserRouter>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
+            <Route path="/docs/api" element={<ApiDocsPage />} />
             <Route element={<AppShell />}>
               <Route path="/" element={<HomePage />} />
               <Route path="/matches" element={<MatchesPage />} />

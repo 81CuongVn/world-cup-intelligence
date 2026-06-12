@@ -12,3 +12,5 @@ dist/**/.dev.vars
 *.log
 .DS_Store
 tmp-*
+scripts/probe-*.mjs
+scripts/verify-*.mjs

@@ -26,6 +26,7 @@ export type FifaMatchInfo = FifaCalendarMatch & {
   AwayTeam?: FifaSideDetail;
   Attendance?: string | null;
   Officials?: FifaOfficial[];
+  Properties?: { IdIFES?: string | number | null } | null;
 };
 
 type FifaSideDetail = {
@@ -82,7 +83,10 @@ type FifaOfficial = {
 type CalendarResponse = { Results?: FifaCalendarMatch[] | null };
 
 const DEFAULT_HEADERS = {
-  Accept: 'application/json',
+  Accept: 'application/json, text/plain, */*',
+  'Accept-Language': 'en',
+  Origin: 'https://www.fifa.com',
+  Referer: 'https://www.fifa.com/',
   'User-Agent': 'wc-tactical-platform/1.0 (FIFA Match Centre sync)',
 };
 
@@ -129,6 +133,32 @@ export async function fetchFifaWc2026FixturesCalendar(): Promise<FifaCalendarMat
 export async function fetchFifaMatchInfo(fifaMatchId: string): Promise<FifaMatchInfo | null> {
   const params = new URLSearchParams({ idMatch: fifaMatchId, language: 'en' });
   return fifaFetch<FifaMatchInfo>(`live/football/getMatchInfo?${params}`);
+}
+
+export type FifaTimelineEvent = {
+  EventId?: string;
+  IdTeam?: string;
+  IdPlayer?: string;
+  MatchMinute?: string;
+  Period?: number;
+  Type?: number;
+  TypeLocalized?: { Locale?: string; Description?: string }[];
+  EventDescription?: { Locale?: string; Description?: string }[];
+  HomeGoals?: number;
+  AwayGoals?: number;
+  GoalGatePositionX?: number | null;
+  GoalGatePositionY?: number | null;
+};
+
+export type FifaTimelinePayload = {
+  IdMatch?: string;
+  Event?: FifaTimelineEvent[];
+};
+
+/** Match Centre live blog / timeline feed. */
+export async function fetchFifaTimeline(fifaMatchId: string): Promise<FifaTimelinePayload | null> {
+  const params = new URLSearchParams({ language: 'en' });
+  return fifaFetch<FifaTimelinePayload>(`timelines/${fifaMatchId}?${params}`);
 }
 
 export type { FifaGoal, FifaBooking, FifaSubstitution, FifaPlayer, FifaSideDetail };

@@ -5,6 +5,7 @@ import {
   shouldSyncFifaMatch,
   syncFifaMatchByRef,
 } from '../ingestion/fifa/fifaLiveSync';
+import { shouldSyncFifaBlogAndStats, ensureFifaBlogAndStats } from '../ingestion/fifa/fifaLiveBlogSync';
 
 export type TeamMatchStatsRow = {
   teamId: string;
@@ -45,9 +46,22 @@ export async function getMatchStats(env: AppEnv, ref: string): Promise<MatchStat
   const matchId = resolved.id;
 
   if (parseEnv(env).fifaLiveEnabled || !parseEnv(env).mockSources) {
-    if (await shouldSyncFifaMatch(env, matchId, resolved.status)) {
+    const needsScoreSync =
+      resolved.status === 'live' && (await shouldSyncFifaMatch(env, matchId, resolved.status));
+    const needsBlogStatsSync =
+      (resolved.status === 'live' || resolved.status === 'completed') &&
+      (await shouldSyncFifaBlogAndStats(env, matchId, resolved.status));
+    if (needsScoreSync || needsBlogStatsSync) {
       await syncFifaMatchByRef(env, matchId).catch(() => undefined);
     }
+    await ensureFifaBlogAndStats(
+      env,
+      matchId,
+      resolved.home_team_id,
+      resolved.away_team_id,
+      resolved.fifa_match_id,
+      resolved.status,
+    ).catch(() => undefined);
   }
 
   const [homeTeam, awayTeam, statsRows, eventCounts, matchRow] = await Promise.all([

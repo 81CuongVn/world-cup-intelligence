@@ -11,6 +11,7 @@ import {
   runBulkRecomputeIfPending,
   scheduleRecomputeAfterDataChange,
 } from '../services/bulkRecomputeRunner';
+import { deliverWebhook } from '../services/publicApi/webhooks';
 import { syncOfficialLineupsToMatches } from '../services/officialLineupSync';
 
 function statsbombDataChanged(result: {
@@ -84,6 +85,10 @@ export async function handleIngestBatch(
           if (statsbombDataChanged(result)) {
             await scheduleRecomputeAfterDataChange(env, 'bulk-ingest', { immediate: true });
           }
+          break;
+        }
+        case 'webhook_deliver': {
+          await deliverWebhook(env, msg.body.subscriptionId, msg.body.eventId);
           break;
         }
       }

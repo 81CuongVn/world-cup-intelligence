@@ -19,6 +19,7 @@ import {
   updateScenariosFromRealtimeEvent,
 } from '../services/matchScenarioService';
 import * as matchPredictionScenarioRepo from '../db/repositories/matchPredictionScenarioRepo';
+import { createApiClient, listApiClients, revokeApiClient } from '../services/publicApi/clients';
 
 const marketSourceSchema = z.object({
   id: z.string().min(1),
@@ -82,13 +83,24 @@ function requireAdmin(c: { req: { header: (n: string) => string | undefined }; e
 
 adminRoutes.use('*', async (c, next) => {
   const config = parseEnv(c.env);
-  // Read-only admin dashboard endpoints (e.g. source health) are public
-  if (c.req.method === 'GET') {
-    return next();
-  }
   if (config.environment === 'development' && !config.adminToken) {
     return next();
   }
+
+  const path = c.req.path;
+  const needsAdminForGet =
+    c.req.method === 'GET' &&
+    (path.endsWith('/api-clients') || path.includes('/api-clients/'));
+
+  if (needsAdminForGet) {
+    if (!requireAdmin(c)) return c.json({ error: 'Unauthorized' }, 401);
+    return next();
+  }
+
+  if (c.req.method === 'GET') {
+    return next();
+  }
+
   if (!requireAdmin(c)) return c.json({ error: 'Unauthorized' }, 401);
   return next();
 });
@@ -259,4 +271,27 @@ adminRoutes.patch('/sources/:sourceId', async (c) => {
 adminRoutes.post('/crawl-news', async (c) => {
   const inserted = await crawlWorldCupNews(c.env);
   return c.json({ status: 'ok', inserted });
+});
+
+const apiClientSchema = z.object({ name: z.string().min(1).max(120) });
+
+adminRoutes.post('/api-clients', async (c) => {
+  const body = apiClientSchema.parse(await c.req.json());
+  const { client, apiKey } = await createApiClient(c.env, body.name);
+  return c.json({
+    data: client,
+    apiKey,
+    note: 'API key shown once. Use header X-API-Key for /api/v1/* and webhooks.',
+  });
+});
+
+adminRoutes.get('/api-clients', async (c) => {
+  const clients = await listApiClients(c.env);
+  return c.json({ data: clients });
+});
+
+adminRoutes.delete('/api-clients/:id', async (c) => {
+  const ok = await revokeApiClient(c.env, c.req.param('id'));
+  if (!ok) return c.json({ error: 'Not found' }, 404);
+  return c.json({ ok: true });
 });

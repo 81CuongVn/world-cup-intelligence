@@ -34,6 +34,8 @@ export type MatchRow = {
   away_score: number;
   home_xg: number;
   away_xg: number;
+  fifa_match_id?: string | null;
+  updated_at?: string | null;
 };
 
 export type PlayerRow = {
