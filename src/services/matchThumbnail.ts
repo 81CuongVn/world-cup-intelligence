@@ -2,7 +2,6 @@ import type { AppEnv } from '../env';
 import { flagCdnUrl, resolveTeamFlagSlug } from '../lib/teamFlags';
 import { resolveMatchRef } from './matchRef';
 import type { MatchWithSlug } from './matchRef';
-import { renderMatchSvgToPng } from './matchThumbnailPng';
 
 export const MATCH_THUMB_WIDTH = 1200;
 export const MATCH_THUMB_HEIGHT = 630;
@@ -175,6 +174,7 @@ export async function getMatchThumbnailPng(
     }
   }
 
+  const { renderMatchSvgToPng } = await import('./matchThumbnailPng');
   const png = await renderMatchSvgToPng(svgResult.svg);
   if (!png) return null;
 
