@@ -1,5 +1,5 @@
 import type { MatchWithSlug } from './matchRef';
-import { matchThumbnailPublicPath } from './matchThumbnail';
+import { matchOgImagePublicPath, MATCH_THUMB_HEIGHT, MATCH_THUMB_WIDTH } from './matchThumbnail';
 
 function escapeHtml(value: string): string {
   return value
@@ -20,7 +20,7 @@ function upsertMeta(html: string, attr: string, key: string, content: string): s
 export function injectMatchPageHtml(html: string, match: MatchWithSlug, origin: string): string {
   const slug = match.slug;
   const pageUrl = `${origin}/matches/${slug}`;
-  const thumbUrl = `${origin}${matchThumbnailPublicPath(slug)}`;
+  const thumbUrl = `${origin}${matchOgImagePublicPath(slug)}`;
   const title = `${match.home_name} vs ${match.away_name} | PitchIntel`;
   const description = `Phân tích ${match.home_name} gặp ${match.away_name} — xác suất mô hình, thống kê và chiến thuật World Cup 2026.`;
 
@@ -31,6 +31,9 @@ export function injectMatchPageHtml(html: string, match: MatchWithSlug, origin: 
   out = upsertMeta(out, 'property', 'og:description', description);
   out = upsertMeta(out, 'property', 'og:url', pageUrl);
   out = upsertMeta(out, 'property', 'og:image', thumbUrl);
+  out = upsertMeta(out, 'property', 'og:image:width', String(MATCH_THUMB_WIDTH));
+  out = upsertMeta(out, 'property', 'og:image:height', String(MATCH_THUMB_HEIGHT));
+  out = upsertMeta(out, 'property', 'og:image:type', 'image/png');
   out = upsertMeta(out, 'name', 'twitter:card', 'summary_large_image');
   out = upsertMeta(out, 'name', 'twitter:title', title);
   out = upsertMeta(out, 'name', 'twitter:description', description);

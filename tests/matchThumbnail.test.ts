@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildMatchThumbnailSvg,
+  matchOgImagePublicPath,
   matchThumbnailPublicPath,
   matchToThumbnailInput,
 } from '../src/services/matchThumbnail';
@@ -14,9 +15,12 @@ describe('matchThumbnail', () => {
     expect(resolveTeamFlagSlug({ countryCode: 'ZA', teamName: 'South Africa' })).toBe('za');
   });
 
-  it('builds public thumbnail path from slug', () => {
+  it('builds public thumbnail paths from slug', () => {
     expect(matchThumbnailPublicPath('vong-bang-a-mexico-vs-south-africa')).toBe(
       '/api/matches/vong-bang-a-mexico-vs-south-africa/thumbnail',
+    );
+    expect(matchOgImagePublicPath('vong-bang-a-mexico-vs-south-africa')).toBe(
+      '/api/matches/vong-bang-a-mexico-vs-south-africa/thumbnail.png',
     );
   });
 
@@ -69,7 +73,7 @@ describe('spaMatchMeta', () => {
       'https://wcstat.orangecloud.vn',
     );
     expect(out).toContain('Mexico vs South Africa');
-    expect(out).toContain('/api/matches/vong-bang-a-mexico-vs-south-africa/thumbnail');
+    expect(out).toContain('/api/matches/vong-bang-a-mexico-vs-south-africa/thumbnail.png');
   });
 });
 

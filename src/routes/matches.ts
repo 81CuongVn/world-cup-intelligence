@@ -15,7 +15,7 @@ import { getMatchStaff } from '../services/matchStaff';
 import { parseEnv } from '../env';
 import { shouldSyncFifaMatch, syncFifaMatchByRef } from '../ingestion/fifa/fifaLiveSync';
 import * as teamsRepo from '../db/repositories/teamsRepo';
-import { getMatchThumbnailSvg } from '../services/matchThumbnail';
+import { getMatchThumbnailPng, getMatchThumbnailSvg } from '../services/matchThumbnail';
 
 export const matchRoutes = new Hono<{ Bindings: AppEnv }>();
 
@@ -27,6 +27,19 @@ async function loadMatch(c: { env: AppEnv; req: { param: (k: string) => string }
 matchRoutes.get('/', async (c) => {
   const data = await listMatchesWithSlug(c.env.DB);
   return c.json({ data });
+});
+
+matchRoutes.get('/:matchId/thumbnail.png', async (c) => {
+  const refresh = c.req.query('refresh') === '1';
+  const result = await getMatchThumbnailPng(c.env, c.req.param('matchId'), { refresh });
+  if (!result) return c.json({ error: 'Not found' }, 404);
+
+  const headers = new Headers({
+    'Content-Type': 'image/png',
+    'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+    'Access-Control-Allow-Origin': '*',
+  });
+  return new Response(result.png, { headers });
 });
 
 matchRoutes.get('/:matchId/thumbnail', async (c) => {

@@ -37,12 +37,84 @@ function scoreLine(input: MatchThumbnailInput): string | null {
   return `${input.homeScore} – ${input.awayScore}`;
 }
 
-export function matchThumbnailR2Key(matchId: string): string {
+export function matchThumbnailSvgR2Key(matchId: string): string {
   return `match-thumbs/${matchId}.svg`;
 }
 
+export function matchThumbnailPngR2Key(matchId: string): string {
+  return `match-thumbs/${matchId}.png`;
+}
+
+/** Inline UI (browser supports SVG). */
 export function matchThumbnailPublicPath(ref: string): string {
   return `/api/matches/${ref}/thumbnail`;
+}
+
+/** Open Graph / Telegram / Facebook (PNG only). */
+export function matchOgImagePublicPath(ref: string): string {
+  return `/api/matches/${ref}/thumbnail.png`;
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
+  return btoa(binary);
+}
+
+async function fetchAsDataUri(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: 'image/*' },
+      signal: AbortSignal.timeout(10_000),
+      cf: { cacheTtl: 86_400 },
+    } as RequestInit);
+    if (!res.ok) return null;
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (buf.byteLength < 32 || buf.byteLength > 500_000) return null;
+    const ct = res.headers.get('content-type')?.split(';')[0]?.trim() || 'image/png';
+    return `data:${ct};base64,${bytesToBase64(buf)}`;
+  } catch {
+    return null;
+  }
+}
+
+/** Social crawlers cannot load remote images referenced from SVG. */
+export async function embedRemoteImagesInSvg(svg: string): Promise<string> {
+  const hrefRe = /href="(https?:\/\/[^"]+)"/gi;
+  const urls = new Set<string>();
+  for (const match of svg.matchAll(hrefRe)) {
+    if (match[1]) urls.add(match[1]);
+  }
+  let out = svg;
+  for (const url of urls) {
+    const dataUri = await fetchAsDataUri(url);
+    if (dataUri) out = out.split(url).join(dataUri);
+  }
+  return out;
+}
+
+export async function svgToPng(
+  svg: string,
+  width = MATCH_THUMB_WIDTH,
+  height = MATCH_THUMB_HEIGHT,
+): Promise<ArrayBuffer | null> {
+  try {
+    const embedded = await embedRemoteImagesInSvg(svg);
+    const blob = new Blob([embedded], { type: 'image/svg+xml;charset=utf-8' });
+    const bitmap = await createImageBitmap(blob, { resizeWidth: width, resizeHeight: height });
+    const canvas = new OffscreenCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      bitmap.close();
+      return null;
+    }
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+    const outBlob = await canvas.convertToBlob({ type: 'image/png' });
+    return await outBlob.arrayBuffer();
+  } catch {
+    return null;
+  }
 }
 
 export function buildMatchThumbnailSvg(input: MatchThumbnailInput): string {
@@ -131,7 +203,7 @@ export async function getMatchThumbnailSvg(
   const match = await resolveMatchRef(env.DB, ref);
   if (!match) return null;
 
-  const r2Key = matchThumbnailR2Key(match.id);
+  const r2Key = matchThumbnailSvgR2Key(match.id);
   if (!opts?.refresh) {
     const cached = await env.R2_ARTIFACTS.get(r2Key);
     if (cached) {
@@ -145,4 +217,33 @@ export async function getMatchThumbnailSvg(
     httpMetadata: { contentType: 'image/svg+xml' },
   });
   return { svg, match };
+}
+
+export async function getMatchThumbnailPng(
+  env: AppEnv,
+  ref: string,
+  opts?: { refresh?: boolean },
+): Promise<{ png: ArrayBuffer; match: MatchWithSlug } | null> {
+  const svgResult = await getMatchThumbnailSvg(env, ref, opts);
+  if (!svgResult) return null;
+
+  const r2Key = matchThumbnailPngR2Key(svgResult.match.id);
+  if (!opts?.refresh) {
+    const cached = await env.R2_ARTIFACTS.get(r2Key);
+    if (cached) {
+      const png = await cached.arrayBuffer();
+      if (png.byteLength > 500) return { png, match: svgResult.match };
+    }
+  }
+
+  const png = await svgToPng(svgResult.svg);
+  if (!png) return null;
+
+  await env.R2_ARTIFACTS.put(r2Key, png, {
+    httpMetadata: {
+      contentType: 'image/png',
+      cacheControl: 'public, max-age=86400, stale-while-revalidate=604800',
+    },
+  });
+  return { png, match: svgResult.match };
 }

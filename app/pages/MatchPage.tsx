@@ -58,8 +58,7 @@ import { MatchPredictionSummary } from '../components/match/MatchPredictionSumma
 import { MatchRecapPanel } from '../components/match/MatchRecapPanel';
 import { MatchStaffPanel } from '../components/match/MatchStaffPanel';
 import { usePitchMapLive } from '../lib/usePitchMapLive';
-import { MatchVersusThumbnail } from '../components/match/MatchVersusThumbnail';
-import { matchThumbnailUrl } from '../lib/matchThumbnail';
+import { matchOgImageUrl } from '../lib/matchThumbnail';
 import { usePageMeta } from '../lib/usePageMeta';
 
 export function MatchPage() {
@@ -167,7 +166,7 @@ export function MatchPage() {
           description: t('match.metaDescription')
             .replace('{home}', home)
             .replace('{away}', away),
-          image: matchThumbnailUrl(matchRef),
+          image: matchOgImageUrl(matchRef),
           url: `${window.location.origin}/matches/${matchRef}`,
         }
       : null,
@@ -334,17 +333,6 @@ export function MatchPage() {
         onSelect={setActiveSection}
         sectionRefs={sectionRefs}
       />
-
-      {matchRef && home && away && (
-        <MatchVersusThumbnail
-          matchRef={matchRef}
-          homeName={home}
-          awayName={away}
-          homeCountryCode={match?.home_country_code}
-          awayCountryCode={match?.away_country_code}
-          variant="hero"
-        />
-      )}
 
       <section ref={headerRef}>
         <MatchHeader
