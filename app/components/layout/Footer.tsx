@@ -1,12 +1,12 @@
 import { brandTheme } from '../../lib/brand/brandTheme';
 import { useI18n } from '../../lib/i18n/I18nContext';
 
-const LINKEDIN_URL = 'https://www.linkedin.com/in/sycule/';
-const GITHUB_URL = 'https://github.com/sycu8/';
+const LINKEDIN_URL = 'https://www.linkedin.com/in/cuongkun/;
+const GITHUB_URL = 'https://github.com/81CuongVn/';
 
 export function Footer() {
   const { t, mode } = useI18n();
-  const authorName = mode === 'en' ? 'Cuong Le Sy' : 'Lê Sỹ Cường';
+  const authorName = mode === 'en' ? 'Cuong To Thanh' : 'Tô Thanh Cường';
 
   return (
     <footer className="mt-10 min-h-[9.5rem] border-t border-border/60 py-8">

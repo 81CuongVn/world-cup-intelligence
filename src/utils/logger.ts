@@ -1,4 +1,4 @@
-export type LogContext = Record<string, string | number | boolean | undefined>;
+export type LogContext = Record<string, string | number | boolean | string[] | number[] | undefined>;
 
 export function logInfo(message: string, ctx: LogContext = {}): void {
   console.log(JSON.stringify({ level: 'info', message, ...ctx, ts: new Date().toISOString() }));

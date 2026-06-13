@@ -284,7 +284,7 @@ export async function getPitchMapPayload(env: AppEnv, ref: string): Promise<Pitc
     )
       .bind(matchId)
       .all<
-        PitchMapEvent & { event_type: string; end_x: number | null; end_y: number | null }
+        PitchMapEvent & { event_type: string; end_x: number | null; end_y: number | null; team_id: string | null; player_id: string | null }
       >(),
   ]);
 

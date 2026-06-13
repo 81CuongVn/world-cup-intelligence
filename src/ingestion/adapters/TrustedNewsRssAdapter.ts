@@ -72,7 +72,7 @@ export const WC_NEWS_FEEDS = [
   },
 ] as const;
 
-export type NewsFeed = (typeof WC_NEWS_FEEDS)[number];
+export type NewsFeed = { id: string; name: string; publisher: string; url: string; reliability: number };
 
 export function newsFeedSourceId(feedId: string): string {
   return `src-${feedId}`;

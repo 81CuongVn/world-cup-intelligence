@@ -13,7 +13,7 @@ const FIFA_WC2026_FEED = {
   publisher: 'FIFA',
   url: 'https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/news',
   reliability: 0.92,
-} as const;
+} satisfies { id: string; name: string; publisher: string; url: string; reliability: number };
 
 export async function crawlWorldCupNews(env: AppEnv): Promise<number> {
   let inserted = 0;

@@ -16,8 +16,8 @@ export type FifaCalendarMatch = {
   Period?: number | null;
   HomeTeamScore: number | null;
   AwayTeamScore: number | null;
-  Home: { TeamName?: { Locale?: string; Description?: string }[]; IdCountry?: string } | null;
-  Away: { TeamName?: { Locale?: string; Description?: string }[]; IdCountry?: string } | null;
+  Home: { TeamName?: { Locale?: string; Description?: string }[]; IdCountry?: string; Score?: number | null } | null;
+  Away: { TeamName?: { Locale?: string; Description?: string }[]; IdCountry?: string; Score?: number | null } | null;
   BallPossession?: { OverallHome?: number; OverallAway?: number } | null;
 };
 
